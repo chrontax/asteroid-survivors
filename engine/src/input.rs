@@ -29,7 +29,6 @@ impl TryFrom<WindowEvent> for Input {
                 event: KeyEvent {
                     state, logical_key, ..
                 },
-                is_synthetic: false,
                 ..
             } => Self::Keyboard {
                 key: logical_key,
