@@ -165,26 +165,39 @@ impl EverythingToDraw {
             .sum::<usize>()
             * 2;
 
+        let helper = |s: &RenderLiteral| match s {
+            RenderLiteral::Game(ShapeLiteral::Polygon { angles, .. }) => angles.len(),
+            RenderLiteral::UI {
+                shape: ShapeLiteral::Polygon { angles, .. },
+                ..
+            } => angles.len(),
+        } as u16;
+
+        let mut a = 0;
+        let game_indices = self
+            .shapes
+            .iter()
+            .filter(|s| matches!(s, RenderLiteral::Game(_)))
+            .flat_map(|s| {
+                let count = helper(s);
+                let n = a;
+                a += count;
+                (0..count).flat_map(move |i| [i + n, (i + 1) % count + n])
+            });
+        let mut b = 0;
         (
-            self.shapes
-                .iter()
-                .filter(|s| matches!(s, RenderLiteral::Game(_)))
-                .enumerate()
+            game_indices
                 .chain(
                     self.shapes
                         .iter()
                         .filter(|s| matches!(s, RenderLiteral::UI { .. }))
-                        .enumerate(),
+                        .flat_map(|s| {
+                            let count = helper(s);
+                            let n = b;
+                            b += count;
+                            (0..count).flat_map(move |i| [i + n, (i + 1) % count + n])
+                        }),
                 )
-                .flat_map(|(i, s)| {
-                    let ShapeLiteral::Polygon { angles, .. } = match s {
-                        RenderLiteral::Game(shape) => shape,
-                        RenderLiteral::UI { shape, .. } => shape,
-                    };
-                    let count = angles.len() as u16;
-
-                    (0..count).flat_map(move |j| [j + i as u16, (j + 1) % count + i as u16])
-                })
                 .collect(),
             ui_start,
         )
@@ -618,8 +631,10 @@ impl Renderer {
         let ui_pc = to_draw.ui_pc(window);
         let frag_pc = to_draw.frag_pc();
         let game_vertices = to_draw.game_vertices();
+        dbg!(&game_vertices);
         let ui_vertices = to_draw.ui_vertices();
         let (indices, ui_start) = to_draw.indices();
+        dbg!(&indices);
 
         if game_vertices.len() > self.game_vb.len {
             self.game_vb = self.create_vertex_buffer::<GameVertex>(game_vertices.len())?;
