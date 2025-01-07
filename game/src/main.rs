@@ -98,6 +98,7 @@ impl GameTrait for Game {
             SteeringDirection::None => self.rotation,
         };
         dbg!(self.rotation);
+        // czemu to jest takie magiczne??!
         if self.steering_keys.forward {
             let angl = (self.rotation.abs() + 1.5) * PI;
             self.position[0] += speed * angl.cos();
