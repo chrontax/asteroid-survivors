@@ -71,7 +71,7 @@ impl GameTrait for Game {
                         2. / 3. * PI + rotation,
                         4. / 3. * PI + rotation,
                     ],
-                    distances: vec![150., 100., 100.],
+                    distances: vec![75., 50., 50.],
                     border_thickness: 0.,
                 }),
                 RenderLiteral::Game(ShapeLiteral::Polygon {
@@ -91,19 +91,17 @@ impl GameTrait for Game {
     }
 
     fn update(&mut self, dt: f32) {
-        let speed: f32 = 10.;
+        let speed: f32 = 5.;
         self.rotation = match self.stering_direction {
-            SteeringDirection::Left => (self.rotation + dt) % 2.,
-            SteeringDirection::Right => (self.rotation - dt) % 2.,
+            SteeringDirection::Left => (self.rotation + dt * 1.5) % 2.,
+            SteeringDirection::Right => (self.rotation - dt * 1.5) % 2.,
             SteeringDirection::None => self.rotation,
         };
-        dbg!(self.rotation);
         // czemu to jest takie magiczne??!
         if self.steering_keys.forward {
-            let angl = (self.rotation.abs() + 1.5) * PI;
+            let angl = (self.rotation + 1.5) * PI;
             self.position[0] += speed * angl.cos();
             self.position[1] += speed * angl.sin() * -1.;
-            dbg!(self.position);
         }
     }
 
