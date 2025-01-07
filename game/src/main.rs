@@ -63,25 +63,47 @@ impl GameTrait for Game {
             camera_pos: self.cam_position,
             colour: [1., 1., 1., 1.],
             inverted: false,
-            shapes: vec![RenderLiteral::Game(ShapeLiteral::Polygon {
-                pos: self.position,
-                angles: vec![
-                    0. + rotation,
-                    2. / 3. * PI + rotation,
-                    4. / 3. * PI + rotation,
-                ],
-                distances: vec![100., 100., 100.],
-                border_thickness: 0.,
-            })],
+            shapes: vec![
+                RenderLiteral::Game(ShapeLiteral::Polygon {
+                    pos: self.position,
+                    angles: vec![
+                        0. + rotation,
+                        2. / 3. * PI + rotation,
+                        4. / 3. * PI + rotation,
+                    ],
+                    distances: vec![150., 100., 100.],
+                    border_thickness: 0.,
+                }),
+                RenderLiteral::Game(ShapeLiteral::Polygon {
+                    pos: [-200., 200.],
+                    angles: vec![0., 2. / 3. * PI, 4. / 3. * PI, 6. / 3. * PI],
+                    distances: vec![50., 50., 50., 50.],
+                    border_thickness: 0.,
+                }),
+                RenderLiteral::Game(ShapeLiteral::Polygon {
+                    pos: [200., 200.],
+                    angles: vec![0., 2. / 3. * PI, 4. / 3. * PI, 6. / 3. * PI],
+                    distances: vec![150., 50., 50., 50.],
+                    border_thickness: 0.,
+                }),
+            ],
         }
     }
 
     fn update(&mut self, dt: f32) {
+        let speed: f32 = 10.;
         self.rotation = match self.stering_direction {
             SteeringDirection::Left => (self.rotation + dt) % 2.,
             SteeringDirection::Right => (self.rotation - dt) % 2.,
             SteeringDirection::None => self.rotation,
         };
+        dbg!(self.rotation);
+        if self.steering_keys.forward {
+            let angl = (self.rotation.abs() + 1.5) * PI;
+            self.position[0] += speed * angl.cos();
+            self.position[1] += speed * angl.sin() * -1.;
+            dbg!(self.position);
+        }
     }
 
     fn input(&mut self, input: Input) {

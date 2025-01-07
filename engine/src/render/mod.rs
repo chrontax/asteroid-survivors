@@ -631,10 +631,10 @@ impl Renderer {
         let ui_pc = to_draw.ui_pc(window);
         let frag_pc = to_draw.frag_pc();
         let game_vertices = to_draw.game_vertices();
-        dbg!(&game_vertices);
+        // dbg!(&game_vertices);
         let ui_vertices = to_draw.ui_vertices();
         let (indices, ui_start) = to_draw.indices();
-        dbg!(&indices);
+        // dbg!(&indices);
 
         if game_vertices.len() > self.game_vb.len {
             self.game_vb = self.create_vertex_buffer::<GameVertex>(game_vertices.len())?;
