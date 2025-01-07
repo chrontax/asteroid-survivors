@@ -4,7 +4,7 @@ use engine::{
     run_game, EngineInitInfo, EverythingToDraw, Game as GameTrait, Input, RenderLiteral,
     ShapeLiteral,
 };
-use winit::dpi::PhysicalSize;
+use winit::{dpi::PhysicalSize, event::ElementState, keyboard::Key};
 
 fn main() {
     run_game::<Game>().unwrap();
@@ -12,6 +12,23 @@ fn main() {
 
 struct Game {
     rotation: f32,
+    position: [f32; 2],
+    cam_position: [f32; 2],
+    stering_direction: SteeringDirection,
+    steering_keys: SteeringKeys,
+}
+
+struct SteeringKeys {
+    left: bool,
+    right: bool,
+    forward: bool,
+}
+
+#[derive(PartialEq)]
+enum SteeringDirection {
+    Left,
+    None,
+    Right,
 }
 
 impl GameTrait for Game {
@@ -25,7 +42,17 @@ impl GameTrait for Game {
                     height: 720,
                 },
             },
-            Self { rotation: 0. },
+            Self {
+                rotation: 0.,
+                position: Default::default(),
+                cam_position: Default::default(),
+                stering_direction: SteeringDirection::None,
+                steering_keys: SteeringKeys {
+                    left: false,
+                    right: false,
+                    forward: false,
+                },
+            },
         )
     }
 
@@ -33,11 +60,11 @@ impl GameTrait for Game {
         let rotation = self.rotation * PI;
         EverythingToDraw {
             scale: 1.,
-            camera_pos: [0., 0.],
+            camera_pos: self.cam_position,
             colour: [1., 1., 1., 1.],
             inverted: false,
             shapes: vec![RenderLiteral::Game(ShapeLiteral::Polygon {
-                pos: [0., 0.],
+                pos: self.position,
                 angles: vec![
                     0. + rotation,
                     2. / 3. * PI + rotation,
@@ -50,8 +77,43 @@ impl GameTrait for Game {
     }
 
     fn update(&mut self, dt: f32) {
-        self.rotation = (self.rotation + dt) % 2.;
+        self.rotation = match self.stering_direction {
+            SteeringDirection::Left => (self.rotation + dt) % 2.,
+            SteeringDirection::Right => (self.rotation - dt) % 2.,
+            SteeringDirection::None => self.rotation,
+        };
     }
 
-    fn input(&mut self, _input: Input) {}
+    fn input(&mut self, input: Input) {
+        if let Input::Keyboard { key, state } = input {
+            // zmienic to na match moze
+            //
+            if key.to_text() == Some("w") && state == ElementState::Pressed {
+                self.steering_keys.forward = true
+            } else if key.to_text() == Some("a") && state == ElementState::Pressed {
+                self.steering_keys.left = true
+            } else if key.to_text() == Some("d") && state == ElementState::Pressed {
+                self.steering_keys.right = true
+            } else if key.to_text() == Some("a") && state == ElementState::Released {
+                self.steering_keys.left = false
+            } else if key.to_text() == Some("d") && state == ElementState::Released {
+                self.steering_keys.right = false
+            } else if key.to_text() == Some("w") && state == ElementState::Released {
+                self.steering_keys.forward = false
+            }
+        }
+        self.stering_direction = match self.steering_keys {
+            SteeringKeys {
+                left: true,
+                right: false,
+                ..
+            } => SteeringDirection::Left,
+            SteeringKeys {
+                left: false,
+                right: true,
+                ..
+            } => SteeringDirection::Right,
+            _ => SteeringDirection::None,
+        };
+    }
 }
