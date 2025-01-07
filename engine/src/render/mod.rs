@@ -143,7 +143,7 @@ impl EverythingToDraw {
                         .iter()
                         .zip(distances.iter())
                         .map(|(&a, &d)| UiVertex {
-                            position: [pos[0] + d * a.cos(), pos[1] + d * a.sin()],
+                            position: [pos[0] + d * a.sin(), pos[1] + d * a.cos()],
                             anchor: *anchor,
                         }),
                 }
@@ -169,12 +169,13 @@ impl EverythingToDraw {
             self.shapes
                 .iter()
                 .filter(|s| matches!(s, RenderLiteral::Game(_)))
+                .enumerate()
                 .chain(
                     self.shapes
                         .iter()
-                        .filter(|s| matches!(s, RenderLiteral::UI { .. })),
+                        .filter(|s| matches!(s, RenderLiteral::UI { .. }))
+                        .enumerate(),
                 )
-                .enumerate()
                 .flat_map(|(i, s)| {
                     let ShapeLiteral::Polygon { angles, .. } = match s {
                         RenderLiteral::Game(shape) => shape,
@@ -720,6 +721,41 @@ impl Renderer {
 
             ctx.device
                 .cmd_draw_indexed(command_buffer, ui_start as u32, 1, 0, 0, 0);
+
+            ctx.device.cmd_bind_pipeline(
+                command_buffer,
+                vk::PipelineBindPoint::GRAPHICS,
+                self.ui_polygon_pipeline.pipeline,
+            );
+
+            ctx.device
+                .cmd_bind_vertex_buffers(command_buffer, 0, &[self.ui_vb.buffer], &[0]);
+
+            ctx.device.cmd_push_constants(
+                command_buffer,
+                self.ui_polygon_pipeline.layout,
+                vk::ShaderStageFlags::VERTEX,
+                0,
+                bytes_of(&ui_pc),
+            );
+
+            ctx.device.cmd_push_constants(
+                command_buffer,
+                self.ui_polygon_pipeline.layout,
+                vk::ShaderStageFlags::FRAGMENT,
+                16,
+                bytes_of(&frag_pc),
+            );
+
+            ctx.device.cmd_draw_indexed(
+                command_buffer,
+                (indices.len() - ui_start) as _,
+                1,
+                ui_start as _,
+                0,
+                0,
+            );
+
             ctx.device.cmd_end_render_pass(command_buffer);
 
             ctx.device.end_command_buffer(command_buffer).unwrap();
