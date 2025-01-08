@@ -97,7 +97,9 @@ impl GameTrait for Game {
             SteeringDirection::Right => (self.rotation - dt * 1.5) % 2.,
             SteeringDirection::None => self.rotation,
         };
-        // czemu to jest takie magiczne??!
+
+        self.cam_position = self.position;
+
         if self.steering_keys.forward {
             let angl = (self.rotation + 1.5) * PI;
             self.position[0] += speed * angl.cos();
@@ -109,19 +111,20 @@ impl GameTrait for Game {
         if let Input::Keyboard { key, state } = input {
             // zmienic to na match moze
             //
-            if key.to_text() == Some("w") && state == ElementState::Pressed {
-                self.steering_keys.forward = true
-            } else if key.to_text() == Some("a") && state == ElementState::Pressed {
-                self.steering_keys.left = true
-            } else if key.to_text() == Some("d") && state == ElementState::Pressed {
-                self.steering_keys.right = true
-            } else if key.to_text() == Some("a") && state == ElementState::Released {
-                self.steering_keys.left = false
-            } else if key.to_text() == Some("d") && state == ElementState::Released {
-                self.steering_keys.right = false
-            } else if key.to_text() == Some("w") && state == ElementState::Released {
-                self.steering_keys.forward = false
-            }
+            match state {
+                ElementState::Pressed => match key.to_text() {
+                    Some("w") => self.steering_keys.forward = true,
+                    Some("a") => self.steering_keys.left = true,
+                    Some("d") => self.steering_keys.right = true,
+                    _ => (),
+                },
+                ElementState::Released => match key.to_text() {
+                    Some("w") => self.steering_keys.forward = false,
+                    Some("a") => self.steering_keys.left = false,
+                    Some("d") => self.steering_keys.right = false,
+                    _ => (),
+                },
+            };
         }
         self.stering_direction = match self.steering_keys {
             SteeringKeys {
