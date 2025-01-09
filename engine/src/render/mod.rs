@@ -631,10 +631,19 @@ impl Renderer {
         let ui_pc = to_draw.ui_pc(window);
         let frag_pc = to_draw.frag_pc();
         let game_vertices = to_draw.game_vertices();
-        // dbg!(&game_vertices);
         let ui_vertices = to_draw.ui_vertices();
         let (indices, ui_start) = to_draw.indices();
-        // dbg!(&indices);
+        let bg_colour = to_draw.inverted as u8 as f32;
+        let fg_colour = if to_draw.inverted {
+            [
+                1. - to_draw.colour[0],
+                1. - to_draw.colour[1],
+                1. - to_draw.colour[2],
+                1.,
+            ]
+        } else {
+            to_draw.colour
+        };
 
         if game_vertices.len() > self.game_vb.len {
             self.game_vb = self.create_vertex_buffer::<GameVertex>(game_vertices.len())?;
@@ -678,7 +687,7 @@ impl Renderer {
                     .render_area(vk::Rect2D::default().extent(self.swapchain_extent))
                     .clear_values(&[vk::ClearValue {
                         color: vk::ClearColorValue {
-                            float32: [0., 0., 0., 1.],
+                            float32: [bg_colour, bg_colour, bg_colour, 1.],
                         },
                     }]),
                 vk::SubpassContents::INLINE,
@@ -731,7 +740,7 @@ impl Renderer {
                 self.game_polygon_pipeline.layout,
                 vk::ShaderStageFlags::FRAGMENT,
                 32,
-                bytes_of(&frag_pc),
+                bytes_of(&fg_colour),
             );
 
             ctx.device
