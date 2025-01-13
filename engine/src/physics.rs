@@ -5,7 +5,6 @@ use ultraviolet::Vec2;
 pub struct PhysicsModule {
     pub position: Vec2,
     pub velocity: Vec2,
-    pub acceleration: Vec2,
     pub mass: f32,
     pub force: Vec2,
 }
@@ -20,7 +19,6 @@ impl PhysicsEngine {
         let module = Rc::new(RefCell::new(PhysicsModule {
             position: Vec2::zero(),
             velocity: Vec2::zero(),
-            acceleration: Vec2::zero(),
             mass: 1.0,
             force: Vec2::zero(),
         }));
@@ -30,9 +28,8 @@ impl PhysicsEngine {
 
     pub fn update(&mut self, dt: f32) {
         for mut module in self.modules.iter().map(|m| m.borrow_mut()) {
-            module.acceleration = module.force / module.mass;
-            module.force = Vec2::zero();
-            module.velocity = module.velocity + module.acceleration * dt;
+            let acceleration = module.force / module.mass;
+            module.velocity += acceleration * dt;
             module.position = module.position + module.velocity * dt;
         }
     }

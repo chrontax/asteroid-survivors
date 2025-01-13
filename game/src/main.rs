@@ -1,13 +1,11 @@
-use std::{cell::RefCell, f32::consts::PI, rc::Rc};
+use std::f32::consts::PI;
 
 use engine::{
-    physics::{PhysicsEngine, PhysicsModule},
-    run_game, EngineInitInfo, EverythingToDraw, Game as GameTrait, Input, RenderLiteral,
-    ShapeLiteral,
+    physics::PhysicsEngine, run_game, EngineInitInfo, EverythingToDraw, Game as GameTrait, Input,
+    RenderLiteral, ShapeLiteral,
 };
 use player::Player;
-use ultraviolet::{Rotor2, Vec2};
-use winit::{dpi::PhysicalSize, event::ElementState, keyboard::Key};
+use winit::dpi::PhysicalSize;
 
 mod player;
 

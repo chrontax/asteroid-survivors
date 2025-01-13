@@ -1,16 +1,11 @@
-use std::{ffi::CStr, mem::offset_of};
+use std::mem::offset_of;
 
 use anyhow::Result;
-use ash::{
-    khr::{surface, swapchain},
-    prelude::VkResult,
-    vk, Device, Instance,
-};
+use ash::{prelude::VkResult, vk};
 use bytemuck::{bytes_of, NoUninit};
 use context::Context;
 use shaders::{
-    GAME_VERTEX_SHADER, POLYGON_FRAGMENT_SHADER, SIMPLE_GAME_FRAGMENT_SHADER,
-    SIMPLE_UI_FRAGMENT_SHADER, UI_VERTEX_SHADER,
+    GAME_VERTEX_SHADER, SIMPLE_GAME_FRAGMENT_SHADER, SIMPLE_UI_FRAGMENT_SHADER, UI_VERTEX_SHADER,
 };
 use winit::window::Window;
 
@@ -37,23 +32,12 @@ pub enum RenderLiteral {
 }
 
 pub enum ShapeLiteral {
-    // Triangle {
-    //     pos: [f32; 2],
-    //     angles: [f32; 3],
-    //     distances: [f32; 3],
-    // },
-    // Square {
-    //     pos: [f32; 2],
-    //     height: f32,
-    //     width: f32,
-    // },
     Polygon {
         pos: [f32; 2],
         angles: Vec<f32>,
         distances: Vec<f32>,
         border_thickness: f32,
     },
-    // Point([f32; 2]),
     // TODO: letter / text or smth
 }
 
@@ -204,13 +188,10 @@ impl EverythingToDraw {
     }
 }
 
-const REQUIRED_DEVICE_EXTENSIONS: [&CStr; 1] = [swapchain::NAME];
-const RAW_REQUIRED_DEVICE_EXTENSIONS: [*const i8; 1] =
-    car::map!(REQUIRED_DEVICE_EXTENSIONS, |name| name.as_ptr());
 const MAX_FRAMES_IN_FLIGHT: usize = 2;
 
 #[derive(Default)]
-pub(crate) struct Renderer {
+pub struct Renderer {
     ctx: Option<Context>,
 
     surface: vk::SurfaceKHR,
@@ -227,15 +208,12 @@ pub(crate) struct Renderer {
     swapchain_framebuffers: Vec<vk::Framebuffer>,
 
     render_pass: vk::RenderPass,
-    // pipeline_layout: vk::PipelineLayout,
-    // pipeline: vk::Pipeline,
     ui_polygon_pipeline: Pipeline,
     game_polygon_pipeline: Pipeline,
 
     game_vb: Buffer<GameVertex>,
     ui_vb: Buffer<UiVertex>,
     index_buffer: Buffer<u16>,
-    // polygon_uniform_buffer: Buffer,
     command_pool: vk::CommandPool,
     command_buffers: Vec<vk::CommandBuffer>,
 
@@ -244,11 +222,11 @@ pub(crate) struct Renderer {
     render_finished_semaphores: [vk::Semaphore; MAX_FRAMES_IN_FLIGHT],
 
     current_frame: usize,
-    pub(crate) resized: bool,
+    pub resized: bool,
 }
 
 impl Renderer {
-    pub(crate) fn init(&mut self, window: &Window) -> Result<()> {
+    pub fn init(&mut self, window: &Window) -> Result<()> {
         self.ctx = Some(Context::new(window, &mut self.surface)?);
         self.create_queues();
         self.create_swapchain(window)?;
@@ -258,7 +236,6 @@ impl Renderer {
         self.game_vb = self.create_vertex_buffer::<GameVertex>(20)?;
         self.ui_vb = self.create_vertex_buffer::<UiVertex>(20)?;
         self.index_buffer = self.create_index_buffer(20)?;
-        // self.create_polygon_buffer(20)?;
         self.create_sync()?;
         Ok(())
     }
@@ -395,7 +372,6 @@ impl Renderer {
             &[
                 PipelineCreateInfo {
                     vertex_shader: UI_VERTEX_SHADER,
-                    // fragment_shader: POLYGON_FRAGMENT_SHADER,
                     fragment_shader: SIMPLE_UI_FRAGMENT_SHADER,
                     layout: vk::PipelineLayoutCreateInfo::default().push_constant_ranges(&[
                         vk::PushConstantRange::default()
@@ -419,14 +395,6 @@ impl Renderer {
                                 .format(vk::Format::R32G32_SFLOAT)
                                 .location(1)
                                 .offset(offset_of!(UiVertex, anchor) as _),
-                            // vk::VertexInputAttributeDescription::default()
-                            //     .format(vk::Format::R32_UINT)
-                            //     .location(1)
-                            //     .offset(offset_of!(Vertex, polygon_start) as _),
-                            // vk::VertexInputAttributeDescription::default()
-                            //     .format(vk::Format::R32_UINT)
-                            //     .location(2)
-                            //     .offset(offset_of!(Vertex, vertex_count) as _),
                         ]),
                     render_pass: self.render_pass,
                 },
@@ -450,14 +418,6 @@ impl Renderer {
                         .vertex_attribute_descriptions(&[
                             vk::VertexInputAttributeDescription::default()
                                 .format(vk::Format::R32G32_SFLOAT),
-                            // vk::VertexInputAttributeDescription::default()
-                            //     .format(vk::Format::R32_UINT)
-                            //     .location(1)
-                            //     .offset(offset_of!(Vertex, polygon_start) as _),
-                            // vk::VertexInputAttributeDescription::default()
-                            //     .format(vk::Format::R32_UINT)
-                            //     .location(2)
-                            //     .offset(offset_of!(Vertex, vertex_count) as _),
                         ]),
                     render_pass: self.render_pass,
                 },
@@ -536,17 +496,6 @@ impl Renderer {
         )
     }
 
-    // fn create_polygon_buffer(&mut self, size: usize) -> Result<()> {
-    //     self.polygon_uniform_buffer = Buffer::new(
-    //         self.ctx.as_ref().unwrap(),
-    //         vk::BufferUsageFlags::UNIFORM_BUFFER,
-    //         vk::MemoryPropertyFlags::DEVICE_LOCAL | vk::MemoryPropertyFlags::HOST_VISIBLE,
-    //         (size * size_of::<u16>()) as _,
-    //     )?;
-    //
-    //     Ok(())
-    // }
-
     fn create_sync(&mut self) -> VkResult<()> {
         let ctx = self.ctx.as_ref().unwrap();
 
@@ -594,7 +543,7 @@ impl Renderer {
         self.create_framebuffers()
     }
 
-    pub(crate) fn render(&mut self, to_draw: &EverythingToDraw, window: &Window) -> Result<()> {
+    pub fn render(&mut self, to_draw: &EverythingToDraw, window: &Window) -> Result<()> {
         let command_buffer = self.command_buffers[self.current_frame];
         let fence = self.fences[self.current_frame];
         let image_available_semaphore = self.image_available_semaphores[self.current_frame];
@@ -846,56 +795,6 @@ impl Drop for Renderer {
     }
 }
 
-fn rate_devices<'a>(
-    instance: &'a Instance,
-    devices: &'a [vk::PhysicalDevice],
-) -> impl Iterator<Item = (vk::PhysicalDevice, u32)> + 'a {
-    devices.iter().map(|&device| {
-        let mut score = 0;
-        let props = unsafe { instance.get_physical_device_properties(device) };
-
-        if props.device_type == vk::PhysicalDeviceType::DISCRETE_GPU {
-            score += 1000;
-        }
-
-        score += props.limits.max_image_dimension2_d;
-
-        (device, score)
-    })
-}
-
-fn is_device_suitable(
-    instance: &Instance,
-    surface_instance: &surface::Instance,
-    surface: vk::SurfaceKHR,
-    device: vk::PhysicalDevice,
-) -> VkResult<bool> {
-    let available_extensions = unsafe { instance.enumerate_device_extension_properties(device)? };
-    let available_names = available_extensions
-        .iter()
-        .flat_map(|ext| ext.extension_name_as_c_str())
-        .collect::<Vec<_>>();
-
-    let supports_extensions = REQUIRED_DEVICE_EXTENSIONS
-        .iter()
-        .all(|name| available_names.contains(name));
-
-    let swapchain_adequate = supports_extensions && {
-        let details = SwapchainSupportDetails::query(device, surface_instance, surface)?;
-        !details.formats.is_empty() && !details.present_modes.is_empty()
-    };
-
-    Ok(supports_extensions
-        && swapchain_adequate
-        && QueueFamilyIndices::find(instance, surface_instance, surface, device).is_complete())
-}
-
-fn create_shader_module(device: Device, source: &[u32]) -> VkResult<vk::ShaderModule> {
-    unsafe {
-        device.create_shader_module(&vk::ShaderModuleCreateInfo::default().code(source), None)
-    }
-}
-
 #[repr(C)]
 #[derive(Default, Clone, Copy, NoUninit, Debug)]
 struct UiPushConstants {
@@ -922,8 +821,6 @@ struct FragPushConstants {
 #[derive(Default, Debug)]
 struct GameVertex {
     position: [f32; 2],
-    // polygon_start: u32,
-    // vertex_count: u32,
 }
 
 #[repr(C)]

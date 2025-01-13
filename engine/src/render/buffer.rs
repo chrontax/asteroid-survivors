@@ -99,6 +99,8 @@ impl<T> Buffer<T> {
         Ok(())
     }
 
+    // currently unused, but may come in handy
+    #[allow(unused)]
     pub fn copy_to(
         &self,
         other: &Self,

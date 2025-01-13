@@ -1,10 +1,8 @@
-use std::ffi::CStr;
-
 use ash::{prelude::VkResult, vk};
 
 use super::context::Context;
 
-pub(crate) struct PipelineCreateInfo<'a> {
+pub struct PipelineCreateInfo<'a> {
     pub layout: vk::PipelineLayoutCreateInfo<'a>,
     pub vertex_shader: &'a [u32],
     pub vertex_input_state: vk::PipelineVertexInputStateCreateInfo<'a>,
