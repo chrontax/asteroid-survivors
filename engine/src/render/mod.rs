@@ -118,7 +118,7 @@ impl EverythingToDraw {
                         .iter()
                         .zip(distances.iter())
                         .map(|(&a, &d)| GameVertex {
-                            position: [pos[0] + d * a.sin(), pos[1] + d * a.cos()],
+                            position: [pos[0] + d * a.cos(), pos[1] + d * a.sin()],
                         }),
                 }
             })
