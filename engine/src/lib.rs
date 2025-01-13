@@ -1,6 +1,8 @@
 mod input;
 mod render;
 
+pub mod physics;
+
 use std::time::Instant;
 
 use anyhow::Result;
