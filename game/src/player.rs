@@ -7,6 +7,7 @@ pub struct Player {
     rotation: f32,
     pub thrust: f32,
     pub physics_module: Rc<RefCell<PhysicsModule>>,
+    pub rotation_rps: f32,
     steering_keys: SteeringKeys,
 }
 
@@ -16,6 +17,7 @@ impl Player {
             rotation: 0.,
             physics_module,
             thrust: 100.,
+            rotation_rps: 1.,
             steering_keys: SteeringKeys {
                 left: false,
                 right: false,
@@ -32,8 +34,8 @@ impl Player {
         }
 
         self.rotation = match self.steering_keys.direction() {
-            SteeringDirection::Left => self.rotation - dt,
-            SteeringDirection::Right => self.rotation + dt,
+            SteeringDirection::Left => self.rotation - dt * self.rotation_rps * 2. * PI,
+            SteeringDirection::Right => self.rotation + dt * self.rotation_rps * 2. * PI,
             SteeringDirection::None => self.rotation,
         } % (2. * PI);
     }
