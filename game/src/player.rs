@@ -16,7 +16,7 @@ impl Player {
         Self {
             rotation: 0.,
             physics_module,
-            thrust: 100.,
+            thrust: 500.,
             rotation_rps: 1.,
             steering_keys: SteeringKeys {
                 left: false,

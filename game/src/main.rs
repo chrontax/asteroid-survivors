@@ -17,6 +17,7 @@ struct Game {
     cam_position: [f32; 2],
     physics: PhysicsEngine,
     player: Player,
+    speed: f32,
 }
 
 impl GameTrait for Game {
@@ -35,6 +36,7 @@ impl GameTrait for Game {
                 cam_position: Default::default(),
                 player: Player::new(physics.new_module()),
                 physics,
+                speed: Default::default(),
             },
         )
     }
@@ -56,7 +58,8 @@ impl GameTrait for Game {
         ];
         shapes.append(&mut self.player.polygons());
         EverythingToDraw {
-            scale: 1.,
+            scale: 1.
+                - (0.6 / (1.0_f32 + (10.0_f32 * 2.71828182846_f32.powf(0.57_f32 * self.speed)))),
             camera_pos: self.cam_position,
             colour: [1., 1., 1., 1.],
             inverted: false,
@@ -70,6 +73,10 @@ impl GameTrait for Game {
         self.player.update(dt);
 
         self.physics.update(dt);
+
+        let speed: [f32; 2] = self.player.physics_module.borrow().velocity.into();
+        self.speed = speed.iter().map(|n| n * n).sum::<f32>().sqrt() / 100.;
+        dbg!(self.speed);
     }
 
     fn input(&mut self, input: Input) {
