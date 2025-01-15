@@ -29,6 +29,7 @@ impl PhysicsEngine {
     pub fn update(&mut self, dt: f32) {
         for mut module in self.modules.iter().map(|m| m.borrow_mut()) {
             let acceleration = module.force / module.mass;
+            module.force = Vec2::zero();
             module.velocity += acceleration * dt;
             module.position = module.position + module.velocity * dt;
         }
