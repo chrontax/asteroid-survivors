@@ -27,6 +27,7 @@ impl PhysicsEngine {
     }
 
     pub fn update(&mut self, dt: f32) {
+        self.modules.retain(|m| Rc::strong_count(m) > 1);
         for mut module in self.modules.iter().map(|m| m.borrow_mut()) {
             let acceleration = module.force / module.mass;
             module.force = Vec2::zero();
