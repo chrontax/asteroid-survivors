@@ -1,7 +1,7 @@
 use std::{cell::RefCell, f32::consts::PI, rc::Rc};
 
 use engine::{physics::PhysicsModule, Input, RenderLiteral};
-use ultraviolet::{Rotor2, Vec2};
+use ultraviolet::{Rotor2, Vec2, Vec4};
 
 pub struct Player {
     pub thrust: f32,
@@ -49,6 +49,7 @@ impl Player {
                 .collect(),
             distances: vec![75., 50., 50.],
             border_thickness: 0.,
+            colour: Vec4::new(1., 0., 0., 1.),
         })]
     }
 

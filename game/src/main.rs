@@ -5,6 +5,7 @@ use engine::{
     RenderLiteral, ShapeLiteral,
 };
 use player::Player;
+use ultraviolet::Vec4;
 use winit::dpi::PhysicalSize;
 
 mod player;
@@ -48,20 +49,20 @@ impl GameTrait for Game {
                 angles: vec![0., 2. / 3. * PI, 4. / 3. * PI, 6. / 3. * PI],
                 distances: vec![50., 50., 50., 50.],
                 border_thickness: 0.,
+                colour: Vec4::one(),
             }),
             RenderLiteral::Game(ShapeLiteral::Polygon {
                 pos: [200., 200.],
                 angles: vec![0., 2. / 3. * PI, 4. / 3. * PI, 6. / 3. * PI],
                 distances: vec![150., 50., 50., 50.],
                 border_thickness: 0.,
+                colour: Vec4::one(),
             }),
         ];
         shapes.append(&mut self.player.polygons());
         EverythingToDraw {
-            scale: 1.
-                - (0.6 / (1.0_f32 + (10.0_f32 * 2.71828182846_f32.powf(0.57_f32 * self.speed)))),
+            scale: 1. - (0.6 / (1.0_f32 + (10.0_f32 * (0.57_f32 * self.speed).exp()))),
             camera_pos: self.cam_position,
-            colour: [1., 1., 1., 1.],
             inverted: false,
             shapes,
         }
@@ -76,7 +77,6 @@ impl GameTrait for Game {
 
         let speed: [f32; 2] = self.player.physics_module.borrow().velocity.into();
         self.speed = speed.iter().map(|n| n * n).sum::<f32>().sqrt() / 100.;
-        dbg!(self.speed);
     }
 
     fn input(&mut self, input: Input) {

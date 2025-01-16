@@ -2,18 +2,18 @@
 
 #ifdef GAME
 #define OFFSET 32
-#endif
-
-#ifdef UI
+#elif defined(UI)
 #define OFFSET 16
 #endif
 
+layout(location = 0) flat in vec4 colour;
+
+layout(location = 0) out vec4 out_col;
+
 layout(push_constant) uniform consts {
-    layout(offset = OFFSET) vec4 colour;
+    layout(offset = OFFSET) bool inverted;
 } CONSTS;
 
-layout(location = 0) out vec4 colour;
-
 void main() {
-    colour = CONSTS.colour;
+    out_col = CONSTS.inverted ? vec4(1 - colour.rgb, colour.a) : colour;
 }

@@ -7,6 +7,7 @@ use context::Context;
 use shaders::{
     GAME_VERTEX_SHADER, SIMPLE_GAME_FRAGMENT_SHADER, SIMPLE_UI_FRAGMENT_SHADER, UI_VERTEX_SHADER,
 };
+use ultraviolet::Vec4;
 use winit::window::Window;
 
 mod buffer;
@@ -34,6 +35,7 @@ pub enum RenderLiteral {
 pub enum ShapeLiteral {
     Polygon {
         pos: [f32; 2],
+        colour: Vec4,
         angles: Vec<f32>,
         distances: Vec<f32>,
         border_thickness: f32,
@@ -45,7 +47,6 @@ pub enum ShapeLiteral {
 pub struct EverythingToDraw {
     pub camera_pos: [f32; 2],
     pub scale: f32,
-    pub colour: [f32; 4],
     pub inverted: bool,
     pub shapes: Vec<RenderLiteral>,
 }
@@ -71,16 +72,8 @@ impl EverythingToDraw {
 
     fn frag_pc(&self) -> FragPushConstants {
         FragPushConstants {
-            colour: if self.inverted {
-                [
-                    1. - self.colour[0],
-                    1. - self.colour[1],
-                    1. - self.colour[2],
-                    self.colour[3],
-                ]
-            } else {
-                self.colour
-            },
+            inverted: self.inverted,
+            padding: [0; 3],
         }
     }
 
@@ -97,12 +90,14 @@ impl EverythingToDraw {
                         pos,
                         angles,
                         distances,
+                        colour,
                         ..
                     } => angles
                         .iter()
                         .zip(distances.iter())
                         .map(|(&a, &d)| GameVertex {
                             position: [pos[0] + d * a.cos(), pos[1] + d * a.sin()],
+                            colour: *colour,
                         }),
                 }
             })
@@ -122,6 +117,7 @@ impl EverythingToDraw {
                         pos,
                         angles,
                         distances,
+                        colour,
                         ..
                     } => angles
                         .iter()
@@ -129,6 +125,7 @@ impl EverythingToDraw {
                         .map(|(&a, &d)| UiVertex {
                             position: [pos[0] + d * a.sin(), pos[1] + d * a.cos()],
                             anchor: *anchor,
+                            colour: *colour,
                         }),
                 }
             })
@@ -378,8 +375,8 @@ impl Renderer {
                             .size(size_of::<UiPushConstants>() as _)
                             .stage_flags(vk::ShaderStageFlags::VERTEX),
                         vk::PushConstantRange::default()
-                            .offset(16)
                             .size(size_of::<FragPushConstants>() as _)
+                            .offset(16)
                             .stage_flags(vk::ShaderStageFlags::FRAGMENT),
                     ]),
                     vertex_input_state: vk::PipelineVertexInputStateCreateInfo::default()
@@ -395,6 +392,10 @@ impl Renderer {
                                 .format(vk::Format::R32G32_SFLOAT)
                                 .location(1)
                                 .offset(offset_of!(UiVertex, anchor) as _),
+                            vk::VertexInputAttributeDescription::default()
+                                .format(vk::Format::R32G32B32A32_SFLOAT)
+                                .location(2)
+                                .offset(offset_of!(UiVertex, colour) as _),
                         ]),
                     render_pass: self.render_pass,
                 },
@@ -406,8 +407,8 @@ impl Renderer {
                             .size(size_of::<GamePushConstants>() as _)
                             .stage_flags(vk::ShaderStageFlags::VERTEX),
                         vk::PushConstantRange::default()
-                            .offset(32)
                             .size(size_of::<FragPushConstants>() as _)
+                            .offset(32)
                             .stage_flags(vk::ShaderStageFlags::FRAGMENT),
                     ]),
                     vertex_input_state: vk::PipelineVertexInputStateCreateInfo::default()
@@ -418,6 +419,10 @@ impl Renderer {
                         .vertex_attribute_descriptions(&[
                             vk::VertexInputAttributeDescription::default()
                                 .format(vk::Format::R32G32_SFLOAT),
+                            vk::VertexInputAttributeDescription::default()
+                                .format(vk::Format::R32G32B32A32_SFLOAT)
+                                .location(1)
+                                .offset(offset_of!(GameVertex, colour) as _),
                         ]),
                     render_pass: self.render_pass,
                 },
@@ -583,16 +588,6 @@ impl Renderer {
         let ui_vertices = to_draw.ui_vertices();
         let (indices, ui_start) = to_draw.indices();
         let bg_colour = to_draw.inverted as u8 as f32;
-        let fg_colour = if to_draw.inverted {
-            [
-                1. - to_draw.colour[0],
-                1. - to_draw.colour[1],
-                1. - to_draw.colour[2],
-                1.,
-            ]
-        } else {
-            to_draw.colour
-        };
 
         if game_vertices.len() > self.game_vb.len {
             self.game_vb = self.create_vertex_buffer::<GameVertex>(game_vertices.len())?;
@@ -689,7 +684,7 @@ impl Renderer {
                 self.game_polygon_pipeline.layout,
                 vk::ShaderStageFlags::FRAGMENT,
                 32,
-                bytes_of(&fg_colour),
+                bytes_of(&frag_pc),
             );
 
             ctx.device
@@ -814,13 +809,15 @@ struct GamePushConstants {
 #[repr(C)]
 #[derive(Default, Clone, Copy, NoUninit, Debug)]
 struct FragPushConstants {
-    colour: [f32; 4],
+    inverted: bool,
+    padding: [u8; 3],
 }
 
 #[repr(C)]
 #[derive(Default, Debug)]
 struct GameVertex {
     position: [f32; 2],
+    colour: Vec4,
 }
 
 #[repr(C)]
@@ -828,4 +825,5 @@ struct GameVertex {
 struct UiVertex {
     position: [f32; 2],
     anchor: [f32; 2],
+    colour: Vec4,
 }
