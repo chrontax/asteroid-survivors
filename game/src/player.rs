@@ -4,7 +4,6 @@ use engine::{physics::PhysicsModule, Input, RenderLiteral};
 use ultraviolet::{Rotor2, Vec2};
 
 pub struct Player {
-    rotation: f32,
     pub thrust: f32,
     pub physics_module: Rc<RefCell<PhysicsModule>>,
     pub rotation_rps: f32,
@@ -14,7 +13,6 @@ pub struct Player {
 impl Player {
     pub fn new(physics_module: Rc<RefCell<PhysicsModule>>) -> Self {
         Self {
-            rotation: 0.,
             physics_module,
             thrust: 500.,
             rotation_rps: 1.,
@@ -26,26 +24,28 @@ impl Player {
         }
     }
 
-    pub fn update(&mut self, dt: f32) {
+    pub fn update(&mut self, _dt: f32) {
         let mut physics_module = self.physics_module.borrow_mut();
 
         if self.steering_keys.forward {
-            physics_module.force = Rotor2::from_angle(self.rotation) * Vec2::unit_x() * self.thrust;
+            physics_module.force =
+                Rotor2::from_angle(physics_module.rotation) * Vec2::unit_x() * self.thrust;
         }
 
-        self.rotation = match self.steering_keys.direction() {
-            SteeringDirection::Left => self.rotation - dt * self.rotation_rps * 2. * PI,
-            SteeringDirection::Right => self.rotation + dt * self.rotation_rps * 2. * PI,
-            SteeringDirection::None => self.rotation,
-        } % (2. * PI);
+        physics_module.angular_velocity = match self.steering_keys.direction() {
+            SteeringDirection::Left => -self.rotation_rps * 2. * PI,
+            SteeringDirection::Right => self.rotation_rps * 2. * PI,
+            SteeringDirection::None => 0.,
+        };
     }
 
     pub fn polygons(&self) -> Vec<RenderLiteral> {
+        let physics_module = self.physics_module.borrow();
         vec![RenderLiteral::Game(engine::ShapeLiteral::Polygon {
-            pos: self.physics_module.borrow().position.into(),
+            pos: physics_module.position.into(),
             angles: [0., 2. / 3. * PI, 4. / 3. * PI]
                 .iter()
-                .map(|a| a + self.rotation)
+                .map(|a| a + physics_module.rotation)
                 .collect(),
             distances: vec![75., 50., 50.],
             border_thickness: 0.,
