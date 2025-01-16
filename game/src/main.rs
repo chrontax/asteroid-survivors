@@ -5,7 +5,7 @@ use engine::{
     RenderLiteral, ShapeLiteral,
 };
 use player::Player;
-use ultraviolet::Vec4;
+use ultraviolet::{Vec2, Vec4};
 use winit::dpi::PhysicalSize;
 
 mod player;
@@ -15,7 +15,7 @@ fn main() {
 }
 
 struct Game {
-    cam_position: [f32; 2],
+    cam_position: Vec2,
     physics: PhysicsEngine,
     player: Player,
     speed: f32,
@@ -45,14 +45,16 @@ impl GameTrait for Game {
     fn draw(&self) -> EverythingToDraw {
         let mut shapes = vec![
             RenderLiteral::Game(ShapeLiteral::Polygon {
-                pos: [-200., 200.],
+                // pos: [-200., 200.],
+                pos: Vec2::new(-200., 200.),
                 angles: vec![0., 2. / 3. * PI, 4. / 3. * PI, 6. / 3. * PI],
                 distances: vec![50., 50., 50., 50.],
                 border_thickness: 0.,
                 colour: Vec4::one(),
             }),
             RenderLiteral::Game(ShapeLiteral::Polygon {
-                pos: [200., 200.],
+                // pos: [200., 200.],
+                pos: Vec2::new(200., 200.),
                 angles: vec![0., 2. / 3. * PI, 4. / 3. * PI, 6. / 3. * PI],
                 distances: vec![150., 50., 50., 50.],
                 border_thickness: 0.,
@@ -69,14 +71,14 @@ impl GameTrait for Game {
     }
 
     fn update(&mut self, dt: f32) {
-        self.cam_position = self.player.physics_module.borrow().position.into();
+        let player_physics = self.player.physics_module.borrow();
+        self.cam_position = player_physics.position;
+        self.speed = player_physics.velocity.mag();
+        drop(player_physics);
 
         self.player.update(dt);
 
         self.physics.update(dt);
-
-        let speed: [f32; 2] = self.player.physics_module.borrow().velocity.into();
-        self.speed = speed.iter().map(|n| n * n).sum::<f32>().sqrt() / 100.;
     }
 
     fn input(&mut self, input: Input) {

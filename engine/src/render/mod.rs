@@ -7,7 +7,7 @@ use context::Context;
 use shaders::{
     GAME_VERTEX_SHADER, SIMPLE_GAME_FRAGMENT_SHADER, SIMPLE_UI_FRAGMENT_SHADER, UI_VERTEX_SHADER,
 };
-use ultraviolet::Vec4;
+use ultraviolet::{Rotor2, Vec2, Vec4};
 use winit::window::Window;
 
 mod buffer;
@@ -25,16 +25,13 @@ use utils::{
 };
 
 pub enum RenderLiteral {
-    UI {
-        anchor: [f32; 2],
-        shape: ShapeLiteral,
-    },
+    UI { anchor: Vec2, shape: ShapeLiteral },
     Game(ShapeLiteral),
 }
 
 pub enum ShapeLiteral {
     Polygon {
-        pos: [f32; 2],
+        pos: Vec2,
         colour: Vec4,
         angles: Vec<f32>,
         distances: Vec<f32>,
@@ -45,7 +42,7 @@ pub enum ShapeLiteral {
 
 // TODO: better name
 pub struct EverythingToDraw {
-    pub camera_pos: [f32; 2],
+    pub camera_pos: Vec2,
     pub scale: f32,
     pub inverted: bool,
     pub shapes: Vec<RenderLiteral>,
@@ -96,7 +93,8 @@ impl EverythingToDraw {
                         .iter()
                         .zip(distances.iter())
                         .map(|(&a, &d)| GameVertex {
-                            position: [pos[0] + d * a.cos(), pos[1] + d * a.sin()],
+                            // position: [pos[0] + d * a.cos(), pos[1] + d * a.sin()],
+                            position: Rotor2::from_angle(a) * Vec2::unit_x() * d + *pos,
                             colour: *colour,
                         }),
                 }
@@ -123,7 +121,8 @@ impl EverythingToDraw {
                         .iter()
                         .zip(distances.iter())
                         .map(|(&a, &d)| UiVertex {
-                            position: [pos[0] + d * a.sin(), pos[1] + d * a.cos()],
+                            // position: [pos[0] + d * a.sin(), pos[1] + d * a.cos()],
+                            position: Rotor2::from_angle(a) * Vec2::unit_x() * d + *pos,
                             anchor: *anchor,
                             colour: *colour,
                         }),
@@ -800,7 +799,7 @@ struct UiPushConstants {
 #[repr(C)]
 #[derive(Default, Clone, Copy, NoUninit, Debug)]
 struct GamePushConstants {
-    cam_pos: [f32; 2],
+    cam_pos: Vec2,
     scale: f32,
     width: u32,
     height: u32,
@@ -816,14 +815,14 @@ struct FragPushConstants {
 #[repr(C)]
 #[derive(Default, Debug)]
 struct GameVertex {
-    position: [f32; 2],
+    position: Vec2,
     colour: Vec4,
 }
 
 #[repr(C)]
 #[derive(Default, Debug)]
 struct UiVertex {
-    position: [f32; 2],
-    anchor: [f32; 2],
+    position: Vec2,
+    anchor: Vec2,
     colour: Vec4,
 }

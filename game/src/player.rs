@@ -42,7 +42,7 @@ impl Player {
     pub fn polygons(&self) -> Vec<RenderLiteral> {
         let physics_module = self.physics_module.borrow();
         vec![RenderLiteral::Game(engine::ShapeLiteral::Polygon {
-            pos: physics_module.position.into(),
+            pos: physics_module.position,
             angles: [0., 2. / 3. * PI, 4. / 3. * PI]
                 .iter()
                 .map(|a| a + physics_module.rotation)
