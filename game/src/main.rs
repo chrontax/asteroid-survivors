@@ -10,6 +10,8 @@ use winit::dpi::PhysicalSize;
 
 mod player;
 
+const MAX_ZOOM_OUT: f32 = 0.5;
+
 fn main() {
     run_game::<Game>().unwrap();
 }
@@ -63,7 +65,8 @@ impl GameTrait for Game {
         ];
         shapes.append(&mut self.player.polygons());
         EverythingToDraw {
-            scale: 1. - (0.6 / (1.0_f32 + (10.0_f32 * (0.57_f32 * self.speed).exp()))),
+            // sigmoid      k / (1 + e^(a + bx))    k = MAX_ZOOM_OUT, a = 4, b = -0.008
+            scale: 1. - (MAX_ZOOM_OUT / (1. + (4. + -0.008 * self.speed).exp())),
             camera_pos: self.cam_position,
             inverted: false,
             shapes,
