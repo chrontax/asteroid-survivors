@@ -1,4 +1,8 @@
-use std::mem::offset_of;
+use std::{
+    io::{stderr, Write},
+    mem::offset_of,
+    time::Instant,
+};
 
 use anyhow::Result;
 use ash::{prelude::VkResult, vk};
@@ -219,6 +223,7 @@ pub struct Renderer {
 
     current_frame: usize,
     pub resized: bool,
+    last_frame: Option<Instant>,
 }
 
 impl Renderer {
@@ -579,6 +584,11 @@ impl Renderer {
                 }
             }
         };
+
+        if let Some(last_frame) = self.last_frame.replace(Instant::now()) {
+            eprint!("\rFPS: {:.2}", last_frame.elapsed().as_secs_f32().recip());
+            stderr().flush().unwrap();
+        }
 
         let game_pc = to_draw.game_pc(window);
         let ui_pc = to_draw.ui_pc(window);
