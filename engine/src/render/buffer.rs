@@ -25,7 +25,8 @@ impl<T> Buffer<T> {
         mut len: usize,
     ) -> Result<Self> {
         let mut size = (len * size_of::<T>()) as _;
-        size += size % ctx.physical_device_properties.limits.non_coherent_atom_size;
+        size += ctx.physical_device_properties.limits.non_coherent_atom_size
+            - size % ctx.physical_device_properties.limits.non_coherent_atom_size;
         len = size as usize / size_of::<T>();
 
         unsafe {
