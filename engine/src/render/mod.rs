@@ -585,6 +585,7 @@ impl Renderer {
             }
         };
 
+        #[cfg(debug_assertions)]
         if let Some(last_frame) = self.last_frame.replace(Instant::now()) {
             eprint!("\rFPS: {:.2}", last_frame.elapsed().as_secs_f32().recip());
             stderr().flush().unwrap();
