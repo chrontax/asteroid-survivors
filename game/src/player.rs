@@ -8,6 +8,8 @@ pub struct Player {
     pub physics_module: Rc<RefCell<PhysicsModule>>,
     pub rotation_rps: f32,
     steering_keys: SteeringKeys,
+    shooting: Shooting,
+    bullets: Vec<RenderLiteral>,
 }
 
 impl Player {
@@ -21,15 +23,25 @@ impl Player {
                 right: false,
                 forward: false,
             },
+            shooting: Shooting {
+                shootnow: false,
+                cooldown: 1.,
+                coolingdown: 0.,
+            },
+            bullets: Default::default(),
         }
     }
 
-    pub fn update(&mut self, _dt: f32) {
+    pub fn update(&mut self, dt: f32) {
         let mut physics_module = self.physics_module.borrow_mut();
 
         if self.steering_keys.forward {
-            physics_module.force =
-                Rotor2::from_angle(physics_module.rotation) * Vec2::unit_x() * self.thrust;
+            // if physics_module.force.mag() > 1000. {}
+            // physics_module.force =
+            let force = Rotor2::from_angle(physics_module.rotation) * Vec2::unit_x() * self.thrust;
+            if force.mag() <= 1000. {
+                physics_module.force = force;
+            }
         }
 
         physics_module.angular_velocity = match self.steering_keys.direction() {
@@ -37,11 +49,18 @@ impl Player {
             SteeringDirection::Right => self.rotation_rps * 2. * PI,
             SteeringDirection::None => 0.,
         };
+
+        if self.shooting.shootnow && self.shooting.coolingdown <= 0. {
+            // spawn bullet
+            self.shooting.coolingdown = self.shooting.cooldown;
+            dbg!("pow");
+        }
+        self.shooting.coolingdown -= dt;
     }
 
     pub fn polygons(&self) -> Vec<RenderLiteral> {
         let physics_module = self.physics_module.borrow();
-        vec![RenderLiteral::Game(engine::ShapeLiteral::Polygon {
+        let vect: Vec<RenderLiteral> = vec![RenderLiteral::Game(engine::ShapeLiteral::Polygon {
             pos: physics_module.position,
             angles: [0., 2. / 3. * PI, 4. / 3. * PI]
                 .iter()
@@ -49,8 +68,9 @@ impl Player {
                 .collect(),
             distances: vec![75., 50., 50.],
             border_thickness: 0.,
-            colour: Vec4::new(1., 0., 0., 1.),
-        })]
+            colour: Vec4::new(1., 1., 1., 1.),
+        })];
+        return vect;
     }
 
     pub fn input(&mut self, input: Input) {
@@ -59,6 +79,7 @@ impl Player {
                 Some("w") => self.steering_keys.forward = state.is_pressed(),
                 Some("a") => self.steering_keys.left = state.is_pressed(),
                 Some("d") => self.steering_keys.right = state.is_pressed(),
+                Some(" ") => self.shooting.shootnow = state.is_pressed(),
                 _ => (),
             }
         }
@@ -86,4 +107,10 @@ enum SteeringDirection {
     Left,
     None,
     Right,
+}
+
+struct Shooting {
+    shootnow: bool,
+    cooldown: f32,
+    coolingdown: f32,
 }
