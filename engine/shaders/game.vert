@@ -2,6 +2,7 @@
 
 layout(location = 0) in vec2 in_pos;
 layout(location = 1) in vec4 in_col;
+layout(location = 2) in float point_size;
 
 layout(location = 0) out vec4 colour;
 
@@ -22,5 +23,6 @@ vec2 transform(vec2 position) {
 
 void main() {
     colour = in_col;
+    gl_PointSize = point_size / 2 * CONSTS.scale;
     gl_Position = vec4(transform(in_pos), 0, 1);
 }

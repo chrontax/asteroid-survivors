@@ -3,6 +3,7 @@
 layout(location = 0) in vec2 offset;
 layout(location = 1) in vec2 anchor;
 layout(location = 2) in vec4 in_col;
+layout(location = 3) in float point_size;
 
 layout(location = 0) out vec4 colour;
 
@@ -18,6 +19,7 @@ void main() {
             0,
             1
         );
+    gl_PointSize = point_size / 2 * CONSTS.width;
 
     colour = in_col;
 }

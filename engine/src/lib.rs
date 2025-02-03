@@ -2,6 +2,7 @@ mod input;
 mod render;
 
 pub mod physics;
+pub mod text;
 
 use std::time::Instant;
 

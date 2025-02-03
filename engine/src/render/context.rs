@@ -107,11 +107,20 @@ impl Context {
 
         let indices =
             QueueFamilyIndices::find(&instance, &surface_instance, *surface, physical_device);
-        let queue_cis = [indices.graphics, indices.present].map(|i| {
-            vk::DeviceQueueCreateInfo::default()
-                .queue_family_index(i)
-                .queue_priorities(&[1.])
-        });
+        let queue_cis = if indices.graphics == indices.present {
+            vec![vk::DeviceQueueCreateInfo::default()
+                .queue_family_index(indices.graphics)
+                .queue_priorities(&[1.])]
+        } else {
+            [indices.graphics, indices.present]
+                .iter()
+                .map(|&i| {
+                    vk::DeviceQueueCreateInfo::default()
+                        .queue_family_index(i)
+                        .queue_priorities(&[1.])
+                })
+                .collect::<Vec<_>>()
+        };
 
         let features = vk::PhysicalDeviceFeatures::default();
         let mut device_ci = vk::DeviceCreateInfo::default()

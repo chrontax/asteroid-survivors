@@ -28,6 +28,8 @@ use utils::{
     SwapchainSupportDetails,
 };
 
+use crate::text::Glyph;
+
 pub enum RenderLiteral {
     UI { anchor: Vec2, shape: ShapeLiteral },
     Game(ShapeLiteral),
@@ -41,7 +43,12 @@ pub enum ShapeLiteral {
         distances: Vec<f32>,
         border_thickness: f32,
     },
-    // TODO: letter / text or smth
+    Glyph {
+        pos: Vec2,
+        colour: Vec4,
+        glyph: Glyph,
+        size: f32,
+    },
 }
 
 // TODO: better name
@@ -78,49 +85,93 @@ impl EverythingToDraw {
         }
     }
 
-    fn game_vertices(&self) -> Vec<GameVertex> {
-        self.shapes
+    fn game_vertices(&self) -> (Vec<GameVertex>, usize) {
+        let mut vec = self
+            .shapes
             .iter()
-            .filter(|s| matches!(s, RenderLiteral::Game(_)))
+            .filter(|s| matches!(s, RenderLiteral::Game(ShapeLiteral::Polygon { .. })))
             .flat_map(|s| {
-                let RenderLiteral::Game(shape) = s else {
-                    unreachable!()
-                };
-                match shape {
-                    ShapeLiteral::Polygon {
+                match s {
+                    RenderLiteral::Game(ShapeLiteral::Polygon {
                         pos,
                         angles,
                         distances,
                         colour,
                         ..
-                    } => angles
+                    }) => angles
                         .iter()
                         .zip(distances.iter())
                         .map(|(&a, &d)| GameVertex {
                             // position: [pos[0] + d * a.cos(), pos[1] + d * a.sin()],
                             position: Rotor2::from_angle(a) * Vec2::unit_x() * d + *pos,
                             colour: *colour,
+                            point_size: 1.,
                         }),
+                    _ => unreachable!(),
                 }
             })
-            .collect()
+            .collect::<Vec<_>>();
+        let polygon_vertex_count = vec.len();
+
+        vec.extend(
+            self.shapes
+                .iter()
+                .filter(|s| matches!(s, RenderLiteral::Game(ShapeLiteral::Glyph { .. })))
+                .flat_map(|s| match s {
+                    RenderLiteral::Game(ShapeLiteral::Glyph {
+                        pos,
+                        colour,
+                        glyph,
+                        size,
+                    }) => glyph
+                        .iter()
+                        .enumerate()
+                        .flat_map(|(row_i, row)| {
+                            row.iter()
+                                .enumerate()
+                                .map(move |(col_i, coloured)| (coloured, (row_i, col_i)))
+                        })
+                        .filter(|(coloured, _)| **coloured)
+                        .map(move |(_, (row_i, col_i))| GameVertex {
+                            position: *pos + Vec2::new(col_i as f32 * size, row_i as f32 * size),
+                            colour: *colour,
+                            point_size: *size,
+                        }),
+                    _ => unreachable!(),
+                }),
+        );
+
+        (vec, polygon_vertex_count)
     }
 
-    fn ui_vertices(&self) -> Vec<UiVertex> {
-        self.shapes
+    fn ui_vertices(&self) -> (Vec<UiVertex>, usize) {
+        let mut vec = self
+            .shapes
             .iter()
-            .filter(|s| matches!(s, RenderLiteral::UI { .. }))
+            .filter(|s| {
+                matches!(
+                    s,
+                    RenderLiteral::UI {
+                        shape: ShapeLiteral::Glyph { .. },
+                        ..
+                    }
+                )
+            })
             .flat_map(|s| {
                 let RenderLiteral::UI { anchor, shape } = s else {
                     unreachable!()
                 };
-                match shape {
-                    ShapeLiteral::Polygon {
-                        pos,
-                        angles,
-                        distances,
-                        colour,
-                        ..
+                match s {
+                    RenderLiteral::UI {
+                        shape:
+                            ShapeLiteral::Polygon {
+                                pos,
+                                angles,
+                                distances,
+                                colour,
+                                ..
+                            },
+                        anchor,
                     } => angles
                         .iter()
                         .zip(distances.iter())
@@ -129,17 +180,63 @@ impl EverythingToDraw {
                             position: Rotor2::from_angle(a) * Vec2::unit_x() * d + *pos,
                             anchor: *anchor,
                             colour: *colour,
+                            point_size: 1.,
                         }),
+                    _ => unreachable!(),
                 }
             })
-            .collect()
+            .collect::<Vec<_>>();
+        let polygon_vertex_count = vec.len();
+
+        vec.extend(
+            self.shapes
+                .iter()
+                .filter(|s| {
+                    matches!(
+                        s,
+                        RenderLiteral::UI {
+                            shape: ShapeLiteral::Glyph { .. },
+                            ..
+                        }
+                    )
+                })
+                .flat_map(|s| match s {
+                    RenderLiteral::UI {
+                        shape:
+                            ShapeLiteral::Glyph {
+                                pos,
+                                colour,
+                                glyph,
+                                size,
+                            },
+                        anchor,
+                    } => glyph
+                        .iter()
+                        .enumerate()
+                        .flat_map(move |(row_i, row)| {
+                            row.iter()
+                                .enumerate()
+                                .map(move |(col_i, coloured)| (coloured, (row_i, col_i)))
+                        })
+                        .filter(|(coloured, _)| **coloured)
+                        .map(move |(_, (row_i, col_i))| UiVertex {
+                            position: *pos + Vec2::new(col_i as f32 * size, row_i as f32 * size),
+                            anchor: *anchor,
+                            colour: *colour,
+                            point_size: *size,
+                        }),
+                    _ => unreachable!(),
+                }),
+        );
+
+        (vec, polygon_vertex_count)
     }
 
     fn indices(&self) -> (Vec<u16>, usize) {
         let ui_start = self
             .shapes
             .iter()
-            .filter(|s| matches!(s, RenderLiteral::Game(_)))
+            .filter(|s| matches!(s, RenderLiteral::Game(ShapeLiteral::Polygon { .. })))
             .map(|s| {
                 let RenderLiteral::Game(ShapeLiteral::Polygon { angles, .. }) = s else {
                     unreachable!()
@@ -155,6 +252,7 @@ impl EverythingToDraw {
                 shape: ShapeLiteral::Polygon { angles, .. },
                 ..
             } => angles.len(),
+            _ => 0,
         } as u16;
 
         let mut a = 0;
@@ -210,6 +308,8 @@ pub struct Renderer {
     render_pass: vk::RenderPass,
     ui_polygon_pipeline: Pipeline,
     game_polygon_pipeline: Pipeline,
+    ui_glyph_pipeline: Pipeline,
+    game_glyph_pipeline: Pipeline,
 
     game_vb: Buffer<GameVertex>,
     ui_vb: Buffer<UiVertex>,
@@ -400,6 +500,10 @@ impl Renderer {
                                 .format(vk::Format::R32G32B32A32_SFLOAT)
                                 .location(2)
                                 .offset(offset_of!(UiVertex, colour) as _),
+                            vk::VertexInputAttributeDescription::default()
+                                .format(vk::Format::R32_SFLOAT)
+                                .location(3)
+                                .offset(offset_of!(UiVertex, point_size) as _),
                         ]),
                     render_pass: self.render_pass,
                 },
@@ -427,6 +531,10 @@ impl Renderer {
                                 .format(vk::Format::R32G32B32A32_SFLOAT)
                                 .location(1)
                                 .offset(offset_of!(GameVertex, colour) as _),
+                            vk::VertexInputAttributeDescription::default()
+                                .format(vk::Format::R32_SFLOAT)
+                                .location(2)
+                                .offset(offset_of!(GameVertex, point_size) as _),
                         ]),
                     render_pass: self.render_pass,
                 },
@@ -436,6 +544,83 @@ impl Renderer {
 
         self.game_polygon_pipeline = pipelines.pop().unwrap();
         self.ui_polygon_pipeline = pipelines.pop().unwrap();
+
+        let mut pipelines = create_pipelines(
+            ctx,
+            &[
+                PipelineCreateInfo {
+                    vertex_shader: UI_VERTEX_SHADER,
+                    fragment_shader: SIMPLE_UI_FRAGMENT_SHADER,
+                    layout: vk::PipelineLayoutCreateInfo::default().push_constant_ranges(&[
+                        vk::PushConstantRange::default()
+                            .size(size_of::<UiPushConstants>() as _)
+                            .stage_flags(vk::ShaderStageFlags::VERTEX),
+                        vk::PushConstantRange::default()
+                            .size(size_of::<FragPushConstants>() as _)
+                            .offset(16)
+                            .stage_flags(vk::ShaderStageFlags::FRAGMENT),
+                    ]),
+                    vertex_input_state: vk::PipelineVertexInputStateCreateInfo::default()
+                        .vertex_binding_descriptions(&[vk::VertexInputBindingDescription::default(
+                        )
+                        .stride(size_of::<UiVertex>() as _)
+                        .input_rate(vk::VertexInputRate::VERTEX)])
+                        .vertex_attribute_descriptions(&[
+                            vk::VertexInputAttributeDescription::default()
+                                .format(vk::Format::R32G32_SFLOAT)
+                                .offset(offset_of!(UiVertex, position) as _),
+                            vk::VertexInputAttributeDescription::default()
+                                .format(vk::Format::R32G32_SFLOAT)
+                                .location(1)
+                                .offset(offset_of!(UiVertex, anchor) as _),
+                            vk::VertexInputAttributeDescription::default()
+                                .format(vk::Format::R32G32B32A32_SFLOAT)
+                                .location(2)
+                                .offset(offset_of!(UiVertex, colour) as _),
+                            vk::VertexInputAttributeDescription::default()
+                                .format(vk::Format::R32_SFLOAT)
+                                .location(3)
+                                .offset(offset_of!(UiVertex, point_size) as _),
+                        ]),
+                    render_pass: self.render_pass,
+                },
+                PipelineCreateInfo {
+                    vertex_shader: GAME_VERTEX_SHADER,
+                    fragment_shader: SIMPLE_GAME_FRAGMENT_SHADER,
+                    layout: vk::PipelineLayoutCreateInfo::default().push_constant_ranges(&[
+                        vk::PushConstantRange::default()
+                            .size(size_of::<GamePushConstants>() as _)
+                            .stage_flags(vk::ShaderStageFlags::VERTEX),
+                        vk::PushConstantRange::default()
+                            .size(size_of::<FragPushConstants>() as _)
+                            .offset(32)
+                            .stage_flags(vk::ShaderStageFlags::FRAGMENT),
+                    ]),
+                    vertex_input_state: vk::PipelineVertexInputStateCreateInfo::default()
+                        .vertex_binding_descriptions(&[vk::VertexInputBindingDescription::default(
+                        )
+                        .stride(size_of::<GameVertex>() as _)
+                        .input_rate(vk::VertexInputRate::VERTEX)])
+                        .vertex_attribute_descriptions(&[
+                            vk::VertexInputAttributeDescription::default()
+                                .format(vk::Format::R32G32_SFLOAT),
+                            vk::VertexInputAttributeDescription::default()
+                                .format(vk::Format::R32G32B32A32_SFLOAT)
+                                .location(1)
+                                .offset(offset_of!(GameVertex, colour) as _),
+                            vk::VertexInputAttributeDescription::default()
+                                .format(vk::Format::R32_SFLOAT)
+                                .location(2)
+                                .offset(offset_of!(GameVertex, point_size) as _),
+                        ]),
+                    render_pass: self.render_pass,
+                },
+            ],
+            vk::PrimitiveTopology::POINT_LIST,
+        )?;
+
+        self.game_glyph_pipeline = pipelines.pop().unwrap();
+        self.ui_glyph_pipeline = pipelines.pop().unwrap();
 
         Ok(())
     }
@@ -594,8 +779,8 @@ impl Renderer {
         let game_pc = to_draw.game_pc(window);
         let ui_pc = to_draw.ui_pc(window);
         let frag_pc = to_draw.frag_pc();
-        let game_vertices = to_draw.game_vertices();
-        let ui_vertices = to_draw.ui_vertices();
+        let (game_vertices, game_polygon_vertex_count) = to_draw.game_vertices();
+        let (ui_vertices, ui_polygon_vertex_count) = to_draw.ui_vertices();
         let (indices, ui_start) = to_draw.indices();
         let bg_colour = to_draw.inverted as u8 as f32;
 
@@ -672,6 +857,7 @@ impl Renderer {
                 &[vk::Rect2D::default().extent(self.swapchain_extent)],
             );
 
+            // ==================== game polygons ====================
             ctx.device
                 .cmd_bind_vertex_buffers(command_buffer, 0, &[self.game_vb.buffer], &[0]);
             ctx.device.cmd_bind_index_buffer(
@@ -700,6 +886,22 @@ impl Renderer {
             ctx.device
                 .cmd_draw_indexed(command_buffer, ui_start as u32, 1, 0, 0, 0);
 
+            // ==================== game glyphs ====================
+            ctx.device.cmd_bind_pipeline(
+                command_buffer,
+                vk::PipelineBindPoint::GRAPHICS,
+                self.game_glyph_pipeline.pipeline,
+            );
+
+            ctx.device.cmd_draw(
+                command_buffer,
+                (game_vertices.len() - game_polygon_vertex_count) as _,
+                1,
+                game_polygon_vertex_count as _,
+                0,
+            );
+
+            // ==================== ui polygons ====================
             ctx.device.cmd_bind_pipeline(
                 command_buffer,
                 vk::PipelineBindPoint::GRAPHICS,
@@ -828,6 +1030,7 @@ struct FragPushConstants {
 struct GameVertex {
     position: Vec2,
     colour: Vec4,
+    point_size: f32,
 }
 
 #[repr(C)]
@@ -836,4 +1039,5 @@ struct UiVertex {
     position: Vec2,
     anchor: Vec2,
     colour: Vec4,
+    point_size: f32,
 }
