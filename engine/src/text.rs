@@ -71,6 +71,10 @@ impl TextBox<'_> {
                     cur_line_width += c.width;
                 }
                 cur_line_width += self.space_width;
+                if cur_line_width > self.width {
+                    cur_line += 1;
+                    cur_line_width = 0.;
+                }
             }
             cur_line_width = 0.;
         }
