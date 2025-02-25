@@ -30,11 +30,13 @@ use utils::{
 
 use crate::text::Glyph;
 
+#[derive(Debug)]
 pub enum RenderLiteral {
     UI { anchor: Vec2, shape: ShapeLiteral },
     Game(ShapeLiteral),
 }
 
+#[derive(Debug)]
 pub enum ShapeLiteral {
     Polygon {
         pos: Vec2,
@@ -52,6 +54,7 @@ pub enum ShapeLiteral {
 }
 
 // TODO: better name
+#[derive(Debug)]
 pub struct EverythingToDraw {
     pub camera_pos: Vec2,
     pub scale: f32,
@@ -152,38 +155,33 @@ impl EverythingToDraw {
                 matches!(
                     s,
                     RenderLiteral::UI {
-                        shape: ShapeLiteral::Glyph { .. },
+                        shape: ShapeLiteral::Polygon { .. },
                         ..
                     }
                 )
             })
-            .flat_map(|s| {
-                let RenderLiteral::UI { anchor, shape } = s else {
-                    unreachable!()
-                };
-                match s {
-                    RenderLiteral::UI {
-                        shape:
-                            ShapeLiteral::Polygon {
-                                pos,
-                                angles,
-                                distances,
-                                colour,
-                                ..
-                            },
-                        anchor,
-                    } => angles
-                        .iter()
-                        .zip(distances.iter())
-                        .map(|(&a, &d)| UiVertex {
-                            // position: [pos[0] + d * a.sin(), pos[1] + d * a.cos()],
-                            position: Rotor2::from_angle(a) * Vec2::unit_x() * d + *pos,
-                            anchor: *anchor,
-                            colour: *colour,
-                            point_size: 1.,
-                        }),
-                    _ => unreachable!(),
-                }
+            .flat_map(|s| match s {
+                RenderLiteral::UI {
+                    shape:
+                        ShapeLiteral::Polygon {
+                            pos,
+                            angles,
+                            distances,
+                            colour,
+                            ..
+                        },
+                    anchor,
+                } => angles
+                    .iter()
+                    .zip(distances.iter())
+                    .map(|(&a, &d)| UiVertex {
+                        // position: [pos[0] + d * a.sin(), pos[1] + d * a.cos()],
+                        position: Rotor2::from_angle(a) * Vec2::unit_x() * d + *pos,
+                        anchor: *anchor,
+                        colour: *colour,
+                        point_size: 1.,
+                    }),
+                _ => unreachable!(),
             })
             .collect::<Vec<_>>();
         let polygon_vertex_count = vec.len();
