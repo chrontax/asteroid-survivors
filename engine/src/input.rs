@@ -4,6 +4,7 @@ use winit::{
     keyboard::Key,
 };
 
+#[derive(Clone)]
 pub enum Input {
     Keyboard {
         key: Key,
