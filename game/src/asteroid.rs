@@ -13,8 +13,9 @@ pub struct Asteroid {
     pub angles: Vec<f32>,
     avel: f32,
     vel: Vec2,
-    timer: f32,
+    pub timer: f32,
     pub to_delete: bool,
+    pub resorces: String,
 }
 impl Asteroid {
     pub fn new(physics_module: Rc<RefCell<PhysicsModule>>, postion: Vec2) -> Self {
@@ -62,6 +63,7 @@ impl Asteroid {
             },
             timer: rand::thread_rng().gen_range(2000f32..10000f32),
             to_delete: false,
+            resorces: "None".to_string(),
         }
     }
 
