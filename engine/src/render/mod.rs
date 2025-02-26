@@ -934,6 +934,21 @@ impl Renderer {
                 0,
             );
 
+            // ==================== ui glyphs ====================
+            ctx.device.cmd_bind_pipeline(
+                command_buffer,
+                vk::PipelineBindPoint::GRAPHICS,
+                self.ui_glyph_pipeline.pipeline,
+            );
+
+            ctx.device.cmd_draw(
+                command_buffer,
+                (ui_vertices.len() - ui_polygon_vertex_count) as _,
+                1,
+                ui_polygon_vertex_count as _,
+                0,
+            );
+
             ctx.device.cmd_end_render_pass(command_buffer);
 
             ctx.device.end_command_buffer(command_buffer).unwrap();

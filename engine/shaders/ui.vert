@@ -19,7 +19,7 @@ void main() {
             0,
             1
         );
-    gl_PointSize = point_size / 2 * CONSTS.width;
+    gl_PointSize = point_size / 2;
 
     colour = in_col;
 }
