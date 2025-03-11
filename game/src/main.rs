@@ -86,16 +86,10 @@ impl<'a> GameTrait for Game<'a> {
                 };
             }
             GameState::Paused => {
-                let shapes = Button {
-                    placement: { Vec2 { x: 0., y: 0. } },
-                    value: { "lama" },
-                    color: { Vec4::new(1., 1., 1., 1.) },
-                    size: { vec![300., 300., 300., 300.] },
-                    text: "paused",
-                }
-                .to_render();
+                let mut shapes = vec![];
+                shapes.append(&mut self.menu.as_ref().unwrap().to_render());
                 return EverythingToDraw {
-                    scale: 1.,
+                    scale: 1. - (MAX_ZOOM_OUT / (1. + (4. + -0.008 * self.speed).exp())),
                     camera_pos: self.cam_position,
                     inverted: false,
                     shapes,
@@ -151,6 +145,7 @@ impl<'a> GameTrait for Game<'a> {
                     self.game_state = GameState::Running
                 }
                 (Some("\u{1b}"), GameState::Running, winit::event::ElementState::Released) => {
+                    self.menu = Some(Menu::new_pause());
                     self.game_state = GameState::Paused
                 }
                 (Some("m"), GameState::Running, winit::event::ElementState::Released) => {
@@ -171,12 +166,31 @@ impl<'a> GameTrait for Game<'a> {
                 match (self.menu.as_ref().unwrap().get_out()) {
                     None => (),
                     Some("exit") => panic!(),
-                    Some("start") => self.game_state = GameState::Running,
+                    Some("start") => {
+                        self.asteroid_vec = vec![];
+                        self.cam_position = Vec2::new(0., 0.);
+                        self.player = Player::new(self.physics.new_module());
+                        self.speed = 0.;
+                        self.game_state = GameState::Running;
+                    }
                     _ => (),
                 }
                 self.menu.as_mut().unwrap().input(input)
             }
-            (GameState::Paused) => (),
+            (GameState::Paused) => {
+                match (self.menu.as_ref().unwrap().get_out()) {
+                    None => (),
+                    Some("unpause") => self.game_state = GameState::Running,
+                    Some("menu") => {
+                        self.game_state = GameState::MainMenu;
+                        self.menu = Some(Menu::new_main());
+                    }
+                    Some("desktop") => panic!(),
+                    _ => (),
+                }
+                dbg!(self.menu.as_ref().unwrap().get_out());
+                self.menu.as_mut().unwrap().input(input)
+            }
             (GameState::Upgradeing) => (),
         }
     }

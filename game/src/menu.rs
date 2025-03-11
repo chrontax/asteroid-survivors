@@ -51,6 +51,36 @@ impl<'a> Menu<'a> {
             out: None,
         }
     }
+    pub fn new_pause() -> Self {
+        Menu {
+            buttons: vec![
+                Button {
+                    placement: { Vec2 { x: -750., y: 0. } },
+                    value: { "unpause" },
+                    color: { Vec4::new(1., 1., 1., 1.) },
+                    size: { vec![300., 300., 300., 300.] },
+                    text: "unpause",
+                },
+                Button {
+                    placement: { Vec2 { x: 0., y: 0. } },
+                    value: { "menu" },
+                    color: { Vec4::new(1., 1., 1., 1.) },
+                    size: { vec![300., 300., 300., 300.] },
+                    text: "quit to menu",
+                },
+                Button {
+                    placement: { Vec2 { x: 750., y: 0. } },
+                    value: { "desktop" },
+                    color: { Vec4::new(1., 0., 0., 1.) },
+                    size: { vec![300., 300., 300., 300.] },
+                    text: "quit to desktop",
+                },
+            ],
+            selected: 0,
+            location: Vec2 { x: 0., y: 100. },
+            out: None,
+        }
+    }
 
     pub fn to_render(&self) -> Vec<RenderLiteral> {
         let mut vec = vec![];
