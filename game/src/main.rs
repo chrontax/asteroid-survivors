@@ -9,7 +9,6 @@ use engine::{
     RenderLiteral, ShapeLiteral,
 };
 use player::Player;
-
 use ultraviolet::{Vec2, Vec4};
 use winit::dpi::PhysicalSize;
 

@@ -1,7 +1,7 @@
-use std::{cell::RefCell, f32::consts::PI, rc::Rc};
-
 use crate::bullet::Bullet;
 use engine::{physics::PhysicsEngine, physics::PhysicsModule, Input, RenderLiteral};
+use rand::Rng;
+use std::{cell::RefCell, f32::consts::PI, rc::Rc};
 use ultraviolet::{Rotor2, Vec2, Vec4};
 
 pub struct Player {
@@ -11,6 +11,7 @@ pub struct Player {
     steering_keys: SteeringKeys,
     shooting: Shooting,
     bullets: Vec<Bullet>,
+    pub upgrades: Upgrades,
 }
 
 impl Player {
@@ -30,6 +31,7 @@ impl Player {
                 coolingdown: 0.,
             },
             bullets: Default::default(),
+            upgrades: Upgrades::default(),
         }
     }
 
@@ -39,15 +41,28 @@ impl Player {
         if self.steering_keys.forward {
             // if physics_module.force.mag() > 1000. {}
             // physics_module.force =
-            let force = Rotor2::from_angle(physics_module.rotation) * Vec2::unit_x() * self.thrust;
-            if force.mag() <= 1000. {
+            let force = Rotor2::from_angle(physics_module.rotation)
+                * Vec2::unit_x()
+                * (self.thrust + self.upgrades.thrust_add)
+                * self.upgrades.rotation_mult;
+            if force.mag() <= 1000. * self.upgrades.speed_limit {
                 physics_module.force = force;
             }
         }
 
         physics_module.angular_velocity = match self.steering_keys.direction() {
-            SteeringDirection::Left => -self.rotation_rps * 2. * PI,
-            SteeringDirection::Right => self.rotation_rps * 2. * PI,
+            SteeringDirection::Left => {
+                (-self.rotation_rps - self.upgrades.rotation_add)
+                    * self.upgrades.rotation_mult
+                    * 2.
+                    * PI
+            }
+            SteeringDirection::Right => {
+                (self.rotation_rps + self.upgrades.rotation_add)
+                    * self.upgrades.rotation_mult
+                    * 2.
+                    * PI
+            }
             SteeringDirection::None => 0.,
         };
         for i in self.bullets.iter_mut() {
@@ -58,12 +73,21 @@ impl Player {
 
         if self.shooting.shootnow && self.shooting.coolingdown <= 0. {
             // spawn bullet
-            self.bullets.push(Bullet::new(
-                physics_engine.new_module(),
-                physics_module.position,
-                physics_module.rotation,
-                physics_module.velocity,
-            ));
+            let mut rng = rand::thread_rng();
+            for _ in 0..self.upgrades.bullet_per_attack {
+                self.bullets.push(Bullet::new(
+                    physics_engine.new_module(),
+                    physics_module.position,
+                    physics_module.rotation
+                        + PI * (rng.gen_range(
+                            1.0 - self.upgrades.accurancy..=1.0 + self.upgrades.accurancy,
+                        ) + 1.),
+                    physics_module.velocity,
+                    self.upgrades.pierce,
+                    self.upgrades.bounce,
+                ));
+            }
+
             self.shooting.coolingdown = self.shooting.cooldown;
         }
         self.shooting.coolingdown -= dt;
@@ -128,4 +152,36 @@ struct Shooting {
     shootnow: bool,
     cooldown: f32,
     coolingdown: f32,
+}
+
+pub struct Upgrades {
+    dmg_add: f32,
+    dmg_mult: f32,
+    thrust_add: f32,
+    thrust_mult: f32,
+    rotation_add: f32,
+    rotation_mult: f32,
+    bounce: i32,
+    pierce: i32,
+    accurancy: f32,
+    bullet_per_attack: i32,
+    speed_limit: f32,
+}
+
+impl Default for Upgrades {
+    fn default() -> Self {
+        Self {
+            dmg_add: 0.,
+            dmg_mult: 1.,
+            thrust_add: 0.,
+            thrust_mult: 1.,
+            rotation_add: 0.,
+            rotation_mult: 1.,
+            bounce: 0,
+            pierce: 0,
+            accurancy: 0.10,
+            bullet_per_attack: 5,
+            speed_limit: 1.,
+        }
+    }
 }

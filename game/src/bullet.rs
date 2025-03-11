@@ -10,6 +10,8 @@ pub struct Bullet {
     pub angles: Vec<f32>,
     pub timer: f32,
     pub to_delete: bool,
+    pierce: i32,
+    bounce: i32,
 }
 impl Bullet {
     pub fn new(
@@ -17,6 +19,8 @@ impl Bullet {
         postion: Vec2,
         rotation: f32,
         velocity: Vec2,
+        pierce: i32,
+        bounce: i32,
     ) -> Self {
         let distances: Vec<f32> = vec![10., 10., 10., 10., 10.];
         let angles: Vec<f32> = vec![0., 2. / 5. * PI, 4. / 5. * PI, 6. / 5. * PI, 8. / 5. * PI];
@@ -35,6 +39,8 @@ impl Bullet {
             angles,
             timer: 10.,
             to_delete: false,
+            pierce,
+            bounce,
         }
     }
 
