@@ -1,6 +1,7 @@
 use std::{cell::RefCell, f32::consts::PI, rc::Rc};
 
-use engine::{physics::PhysicsModule, Input, RenderLiteral};
+use crate::bullet::Bullet;
+use engine::{physics::PhysicsEngine, physics::PhysicsModule, Input, RenderLiteral};
 use ultraviolet::{Rotor2, Vec2, Vec4};
 
 pub struct Player {
@@ -9,7 +10,7 @@ pub struct Player {
     pub rotation_rps: f32,
     steering_keys: SteeringKeys,
     shooting: Shooting,
-    bullets: Vec<RenderLiteral>,
+    bullets: Vec<Bullet>,
 }
 
 impl Player {
@@ -25,14 +26,14 @@ impl Player {
             },
             shooting: Shooting {
                 shootnow: false,
-                cooldown: 1.,
+                cooldown: 0.5,
                 coolingdown: 0.,
             },
             bullets: Default::default(),
         }
     }
 
-    pub fn update(&mut self, dt: f32) {
+    pub fn update(&mut self, dt: f32, physics_engine: &mut PhysicsEngine) {
         let mut physics_module = self.physics_module.borrow_mut();
 
         if self.steering_keys.forward {
@@ -49,27 +50,41 @@ impl Player {
             SteeringDirection::Right => self.rotation_rps * 2. * PI,
             SteeringDirection::None => 0.,
         };
+        for i in self.bullets.iter_mut() {
+            i.update(dt);
+        }
+
+        self.bullets.retain(|a| !a.to_delete);
 
         if self.shooting.shootnow && self.shooting.coolingdown <= 0. {
             // spawn bullet
+            self.bullets.push(Bullet::new(
+                physics_engine.new_module(),
+                physics_module.position,
+                physics_module.rotation,
+                physics_module.velocity,
+            ));
             self.shooting.coolingdown = self.shooting.cooldown;
-            dbg!("pow");
         }
         self.shooting.coolingdown -= dt;
     }
 
     pub fn polygons(&self) -> Vec<RenderLiteral> {
         let physics_module = self.physics_module.borrow();
-        let vect: Vec<RenderLiteral> = vec![RenderLiteral::Game(engine::ShapeLiteral::Polygon {
-            pos: physics_module.position,
-            angles: [0., 2. / 3. * PI, 4. / 3. * PI]
-                .iter()
-                .map(|a| a + physics_module.rotation)
-                .collect(),
-            distances: vec![75., 50., 50.],
-            border_thickness: 0.,
-            colour: Vec4::new(1., 1., 1., 1.),
-        })];
+        let mut vect: Vec<RenderLiteral> =
+            vec![RenderLiteral::Game(engine::ShapeLiteral::Polygon {
+                pos: physics_module.position,
+                angles: [0., 2. / 3. * PI, 4. / 3. * PI]
+                    .iter()
+                    .map(|a| a + physics_module.rotation)
+                    .collect(),
+                distances: vec![75., 50., 50.],
+                border_thickness: 0.,
+                colour: Vec4::new(1., 1., 1., 1.),
+            })];
+        for i in self.bullets.iter() {
+            vect.push(i.polygon())
+        }
         return vect;
     }
 

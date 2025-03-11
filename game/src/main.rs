@@ -1,6 +1,6 @@
 use rand::seq::SliceRandom;
 use rand::Rng;
-use std::f32::consts::PI;
+use std::{f32::consts::PI, ptr::null};
 use whoami;
 
 use asteroid::Asteroid;
@@ -14,7 +14,12 @@ use ultraviolet::{Vec2, Vec4};
 use winit::dpi::PhysicalSize;
 
 mod asteroid;
+mod bullet;
+mod button;
+mod menu;
 mod player;
+use button::Button;
+use menu::Menu;
 
 const MAX_ZOOM_OUT: f32 = 0.5;
 
@@ -22,16 +27,17 @@ fn main() {
     run_game::<Game>().unwrap();
 }
 
-struct Game {
+struct Game<'a> {
     cam_position: Vec2,
     physics: PhysicsEngine,
     player: Player,
     asteroid_vec: Vec<Asteroid>,
     speed: f32,
     game_state: GameState,
+    menu: Option<Menu<'a>>,
 }
 
-impl GameTrait for Game {
+impl<'a> GameTrait for Game<'a> {
     fn init() -> (EngineInitInfo, Self) {
         let mut physics = PhysicsEngine::default();
         (
@@ -49,7 +55,8 @@ impl GameTrait for Game {
                 physics,
                 asteroid_vec: Default::default(),
                 speed: Default::default(),
-                game_state: GameState::Paused,
+                game_state: GameState::MainMenu,
+                menu: Some(Menu::new_main()),
             },
         )
     }
@@ -69,48 +76,8 @@ impl GameTrait for Game {
                 };
             }
             GameState::MainMenu => {
-                let shapes = vec![
-                    RenderLiteral::UI {
-                        anchor: Vec2 { x: 0., y: 0. },
-                        shape: (engine::ShapeLiteral::Polygon {
-                            pos: Vec2 { x: 0., y: 0. },
-                            angles: vec![
-                                (15. / 360.) * 2. * PI,
-                                (165. / 360.) * 2. * PI,
-                                (195. / 360.) * 2. * PI,
-                                (345.0) / 360. * 2. * PI,
-                            ],
-                            distances: vec![300., 300., 300., 300.],
-                            border_thickness: 0.,
-                            colour: Vec4::new(0., 1., 0., 1.),
-                        }),
-                    },
-                    RenderLiteral::UI {
-                        anchor: Vec2 { x: 0., y: 0. },
-                        shape: (engine::ShapeLiteral::Polygon {
-                            pos: Vec2 { x: 0., y: 200. },
-                            angles: vec![
-                                (15. / 360.) * 2. * PI,
-                                (165. / 360.) * 2. * PI,
-                                (195. / 360.) * 2. * PI,
-                                (345.0) / 360. * 2. * PI,
-                            ],
-                            distances: vec![300., 300., 300., 300.],
-                            border_thickness: 0.,
-                            colour: Vec4::new(1., 0., 0., 1.),
-                        }),
-                    },
-                    RenderLiteral::UI {
-                        anchor: Vec2 { x: 0., y: 0. },
-                        shape: (engine::ShapeLiteral::Polygon {
-                            pos: Vec2 { x: -400., y: 200. },
-                            angles: vec![0., 2. / 3. * PI, 4. / 3. * PI],
-                            distances: vec![50., 50., 50.],
-                            border_thickness: 0.,
-                            colour: Vec4::new(1., 1., 1., 1.),
-                        }),
-                    },
-                ];
+                let mut shapes = vec![];
+                shapes.append(&mut self.menu.as_ref().unwrap().to_render());
                 return EverythingToDraw {
                     scale: 1. - (MAX_ZOOM_OUT / (1. + (4. + -0.008 * self.speed).exp())),
                     camera_pos: self.cam_position,
@@ -119,21 +86,14 @@ impl GameTrait for Game {
                 };
             }
             GameState::Paused => {
-                let shapes = vec![RenderLiteral::UI {
-                    anchor: Vec2 { x: 0., y: 0. },
-                    shape: (engine::ShapeLiteral::Polygon {
-                        pos: Vec2 { x: 0., y: 0. },
-                        angles: vec![
-                            (15. / 360.) * 2. * PI,
-                            (165. / 360.) * 2. * PI,
-                            (195. / 360.) * 2. * PI,
-                            (345.) / 360. * 2. * PI,
-                        ],
-                        distances: vec![300., 300., 300., 300.],
-                        border_thickness: 0.,
-                        colour: Vec4::new(0., 1., 0., 1.),
-                    }),
-                }];
+                let shapes = Button {
+                    placement: { Vec2 { x: 0., y: 0. } },
+                    value: { "lama" },
+                    color: { Vec4::new(1., 1., 1., 1.) },
+                    size: { vec![300., 300., 300., 300.] },
+                    text: "paused",
+                }
+                .to_render();
                 return EverythingToDraw {
                     scale: 1.,
                     camera_pos: self.cam_position,
@@ -155,7 +115,7 @@ impl GameTrait for Game {
                 self.speed = player_physics.velocity.mag();
                 drop(player_physics);
 
-                self.player.update(dt);
+                self.player.update(dt, &mut self.physics);
 
                 self.physics.update(dt);
 
@@ -193,14 +153,31 @@ impl GameTrait for Game {
                 (Some("\u{1b}"), GameState::Running, winit::event::ElementState::Released) => {
                     self.game_state = GameState::Paused
                 }
+                (Some("m"), GameState::Running, winit::event::ElementState::Released) => {
+                    self.menu = Some(Menu::new_main());
+                    self.game_state = GameState::MainMenu
+                }
+                (Some("m"), GameState::MainMenu, winit::event::ElementState::Released) => {
+                    self.game_state = GameState::Running
+                }
                 _ => (),
             }
         }
-
-        if self.game_state == GameState::Running {
-            self.player.input(input);
-        } else {
-            // todo!("uzywanie menu")
+        match (self.game_state) {
+            (GameState::Running) => {
+                self.player.input(input);
+            }
+            (GameState::MainMenu) => {
+                match (self.menu.as_ref().unwrap().get_out()) {
+                    None => (),
+                    Some("exit") => panic!(),
+                    Some("start") => self.game_state = GameState::Running,
+                    _ => (),
+                }
+                self.menu.as_mut().unwrap().input(input)
+            }
+            (GameState::Paused) => (),
+            (GameState::Upgradeing) => (),
         }
     }
 }
