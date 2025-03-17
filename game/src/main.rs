@@ -1,15 +1,12 @@
 use asteroid::Asteroid;
 use engine::{
     physics::PhysicsEngine, run_game, EngineInitInfo, EverythingToDraw, Game as GameTrait, Input,
-    RenderLiteral, ShapeLiteral,
 };
 use player::Player;
 use rand::seq::SliceRandom;
 use rand::Rng;
-use std::{f32::consts::PI, ptr::null};
-use ultraviolet::{Vec2, Vec4};
-use upgradeManager::{Upgrade, UpgradeManager};
-use whoami;
+use ultraviolet::Vec2;
+use upgradeManager::UpgradeManager;
 use winit::dpi::PhysicalSize;
 
 mod asteroid;
@@ -18,7 +15,6 @@ mod button;
 mod menu;
 mod player;
 mod upgradeManager;
-use button::Button;
 use menu::Menu;
 
 const MAX_ZOOM_OUT: f32 = 0.5;
@@ -171,12 +167,12 @@ impl<'a> GameTrait for Game<'a> {
                 _ => (),
             }
         }
-        match (self.game_state) {
-            (GameState::Running) => {
+        match self.game_state {
+            GameState::Running => {
                 self.player.input(input);
             }
-            (GameState::MainMenu) => {
-                match (self.menu.as_ref().unwrap().get_out()) {
+            GameState::MainMenu => {
+                match self.menu.as_ref().unwrap().get_out() {
                     None => (),
                     Some("exit") => panic!(),
                     Some("start") => {
@@ -190,8 +186,8 @@ impl<'a> GameTrait for Game<'a> {
                 }
                 self.menu.as_mut().unwrap().input(input);
             }
-            (GameState::Paused) => {
-                match (self.menu.as_ref().unwrap().get_out()) {
+            GameState::Paused => {
+                match self.menu.as_ref().unwrap().get_out() {
                     None => (),
                     Some("unpause") => self.game_state = GameState::Running,
                     Some("menu") => {
@@ -203,7 +199,7 @@ impl<'a> GameTrait for Game<'a> {
                 }
                 self.menu.as_mut().unwrap().input(input)
             }
-            (GameState::Upgradeing) => {
+            GameState::Upgradeing => {
                 match self.upgrade_manager.as_ref().unwrap().get_out() {
                     Some(a) => {
                         self.player.upgrade(a);

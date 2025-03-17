@@ -1,6 +1,6 @@
 use engine::text::TextBox;
 use engine::text::DEFAULT_FONT;
-use engine::{physics::PhysicsModule, RenderLiteral};
+use engine::RenderLiteral;
 use std::f32::consts::PI;
 use ultraviolet::{Vec2, Vec4};
 #[derive(Clone)]

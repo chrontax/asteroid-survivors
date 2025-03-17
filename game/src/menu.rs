@@ -1,5 +1,5 @@
 use crate::button::Button;
-use engine::{physics::PhysicsModule, Input, RenderLiteral};
+use engine::{Input, RenderLiteral};
 
 use std::f32::consts::PI;
 use ultraviolet::{Vec2, Vec4};

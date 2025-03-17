@@ -1,15 +1,10 @@
 use crate::button::Button;
-use crate::menu::{self, Menu};
-use crate::player::Upgrades;
-use engine::{physics::PhysicsModule, Input, RenderLiteral};
-use maplit::hashmap;
-use rand::seq::SliceRandom; // 0.7.2
-use rand::thread_rng;
+use crate::menu::{Menu};
+use engine::{Input, RenderLiteral};
+ // 0.7.2
 use rand::Rng;
-use std::collections::HashMap;
 
-use std::sync::LazyLock;
-use ultraviolet::{Vec2, Vec3, Vec4};
+use ultraviolet::{Vec2, Vec4};
 
 #[derive(Clone)]
 pub struct UpgradeManager<'a> {

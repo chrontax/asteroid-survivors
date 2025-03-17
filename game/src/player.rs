@@ -4,7 +4,7 @@ use crate::{
 };
 use engine::{physics::PhysicsEngine, physics::PhysicsModule, Input, RenderLiteral};
 use rand::Rng;
-use std::{borrow, cell::RefCell, f32::consts::PI, rc::Rc};
+use std::{cell::RefCell, f32::consts::PI, rc::Rc};
 use ultraviolet::{Rotor2, Vec2, Vec4};
 
 pub struct Player {
