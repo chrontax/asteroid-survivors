@@ -49,7 +49,6 @@ impl Bullet {
         if self.timer < 0. {
             self.to_delete = true
         }
-        // self.physics_module.borrow_mut().force = self.force;
     }
 
     pub fn polygon(&self) -> RenderLiteral {
@@ -59,7 +58,7 @@ impl Bullet {
             angles: self.angles.clone(),
             distances: self.distances.clone(),
             border_thickness: 0.,
-            colour: Vec4::new(1., 0., 0., 1.),
+            colour: Vec4::new(1., 1., 1., 1.),
         });
         return vect;
     }

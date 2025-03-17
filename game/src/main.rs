@@ -1,15 +1,15 @@
-use rand::seq::SliceRandom;
-use rand::Rng;
-use std::{f32::consts::PI, ptr::null};
-use whoami;
-
 use asteroid::Asteroid;
 use engine::{
     physics::PhysicsEngine, run_game, EngineInitInfo, EverythingToDraw, Game as GameTrait, Input,
     RenderLiteral, ShapeLiteral,
 };
 use player::Player;
+use rand::seq::SliceRandom;
+use rand::Rng;
+use std::{f32::consts::PI, ptr::null};
 use ultraviolet::{Vec2, Vec4};
+use upgradeManager::{Upgrade, UpgradeManager};
+use whoami;
 use winit::dpi::PhysicalSize;
 
 mod asteroid;
@@ -17,6 +17,7 @@ mod bullet;
 mod button;
 mod menu;
 mod player;
+mod upgradeManager;
 use button::Button;
 use menu::Menu;
 
@@ -34,6 +35,7 @@ struct Game<'a> {
     speed: f32,
     game_state: GameState,
     menu: Option<Menu<'a>>,
+    upgrade_manager: Option<UpgradeManager<'a>>,
 }
 
 impl<'a> GameTrait for Game<'a> {
@@ -56,6 +58,7 @@ impl<'a> GameTrait for Game<'a> {
                 speed: Default::default(),
                 game_state: GameState::MainMenu,
                 menu: Some(Menu::new_main()),
+                upgrade_manager: Option::None,
             },
         )
     }
@@ -147,11 +150,12 @@ impl<'a> GameTrait for Game<'a> {
                     self.menu = Some(Menu::new_pause());
                     self.game_state = GameState::Paused
                 }
-                (Some("m"), GameState::Running, winit::event::ElementState::Released) => {
-                    self.menu = Some(Menu::new_main());
-                    self.game_state = GameState::MainMenu
+                (Some("u"), GameState::Running, winit::event::ElementState::Released) => {
+                    self.upgrade_manager = Some(UpgradeManager::new());
+                    self.game_state = GameState::Upgradeing
                 }
-                (Some("m"), GameState::MainMenu, winit::event::ElementState::Released) => {
+
+                (Some("u"), GameState::Upgradeing, winit::event::ElementState::Released) => {
                     self.game_state = GameState::Running
                 }
                 _ => (),
@@ -174,7 +178,7 @@ impl<'a> GameTrait for Game<'a> {
                     }
                     _ => (),
                 }
-                self.menu.as_mut().unwrap().input(input)
+                self.menu.as_mut().unwrap().input(input);
             }
             (GameState::Paused) => {
                 match (self.menu.as_ref().unwrap().get_out()) {
@@ -187,7 +191,6 @@ impl<'a> GameTrait for Game<'a> {
                     Some("desktop") => panic!(),
                     _ => (),
                 }
-                dbg!(self.menu.as_ref().unwrap().get_out());
                 self.menu.as_mut().unwrap().input(input)
             }
             (GameState::Upgradeing) => (),

@@ -1,7 +1,7 @@
 use crate::bullet::Bullet;
 use engine::{physics::PhysicsEngine, physics::PhysicsModule, Input, RenderLiteral};
 use rand::Rng;
-use std::{cell::RefCell, f32::consts::PI, rc::Rc};
+use std::{borrow, cell::RefCell, f32::consts::PI, rc::Rc};
 use ultraviolet::{Rotor2, Vec2, Vec4};
 
 pub struct Player {
@@ -39,12 +39,10 @@ impl Player {
         let mut physics_module = self.physics_module.borrow_mut();
 
         if self.steering_keys.forward {
-            // if physics_module.force.mag() > 1000. {}
-            // physics_module.force =
             let force = Rotor2::from_angle(physics_module.rotation)
                 * Vec2::unit_x()
                 * (self.thrust + self.upgrades.thrust_add)
-                * self.upgrades.rotation_mult;
+                * self.upgrades.thrust_mult;
             if force.mag() <= 1000. * self.upgrades.speed_limit {
                 physics_module.force = force;
             }
@@ -72,7 +70,6 @@ impl Player {
         self.bullets.retain(|a| !a.to_delete);
 
         if self.shooting.shootnow && self.shooting.coolingdown <= 0. {
-            // spawn bullet
             let mut rng = rand::thread_rng();
             for _ in 0..self.upgrades.bullet_per_attack {
                 self.bullets.push(Bullet::new(
@@ -179,8 +176,8 @@ impl Default for Upgrades {
             rotation_mult: 1.,
             bounce: 0,
             pierce: 0,
-            accurancy: 0.10,
-            bullet_per_attack: 5,
+            accurancy: 0.,
+            bullet_per_attack: 1,
             speed_limit: 1.,
         }
     }

@@ -9,15 +9,15 @@ pub struct Menu<'a> {
     pub buttons: Vec<Button<'a>>,
     pub selected: i8,
     pub location: Vec2,
-    pub out: Option<&'a str>,
+    pub out: Option<String>,
 }
 
 impl<'a> Menu<'a> {
     pub fn new(buttons: Vec<Button<'a>>, location: Vec2) -> Self {
         Self {
-            buttons: buttons,
+            buttons,
             selected: 0,
-            location: location,
+            location,
             out: None,
         }
     }
@@ -26,21 +26,21 @@ impl<'a> Menu<'a> {
             buttons: vec![
                 Button {
                     placement: { Vec2 { x: -750., y: 0. } },
-                    value: { "start" },
+                    value: { "start".to_string() },
                     color: { Vec4::new(1., 1., 1., 1.) },
                     size: { vec![300., 300., 300., 300.] },
                     text: "start",
                 },
                 Button {
                     placement: { Vec2 { x: 0., y: 0. } },
-                    value: { "credits" },
+                    value: { "credits".to_string() },
                     color: { Vec4::new(1., 1., 1., 1.) },
                     size: { vec![300., 300., 300., 300.] },
                     text: "credits",
                 },
                 Button {
                     placement: { Vec2 { x: 750., y: 0. } },
-                    value: { "exit" },
+                    value: { "exit".to_string() },
                     color: { Vec4::new(1., 0., 0., 1.) },
                     size: { vec![300., 300., 300., 300.] },
                     text: "exit",
@@ -56,21 +56,21 @@ impl<'a> Menu<'a> {
             buttons: vec![
                 Button {
                     placement: { Vec2 { x: -750., y: 0. } },
-                    value: { "unpause" },
+                    value: { "unpause".to_string() },
                     color: { Vec4::new(1., 1., 1., 1.) },
                     size: { vec![300., 300., 300., 300.] },
                     text: "unpause",
                 },
                 Button {
                     placement: { Vec2 { x: 0., y: 0. } },
-                    value: { "menu" },
+                    value: { "menu".to_string() },
                     color: { Vec4::new(1., 1., 1., 1.) },
                     size: { vec![300., 300., 300., 300.] },
                     text: "quit to menu",
                 },
                 Button {
                     placement: { Vec2 { x: 750., y: 0. } },
-                    value: { "desktop" },
+                    value: { "desktop".to_string() },
                     color: { Vec4::new(1., 0., 0., 1.) },
                     size: { vec![300., 300., 300., 300.] },
                     text: "quit to desktop",
@@ -100,8 +100,8 @@ impl<'a> Menu<'a> {
         vec
     }
 
-    pub fn get_out(&self) -> Option<&'a str> {
-        self.out
+    pub fn get_out(&self) -> Option<&str> {
+        self.out.as_deref()
     }
 
     pub fn input(&mut self, input: Input) {
@@ -113,7 +113,7 @@ impl<'a> Menu<'a> {
                 (Some("d"), winit::event::ElementState::Released) => {
                     self.selected = ((self.selected + 1) % 3).abs()
                 }
-                (Some("\r"), winit::event::ElementState::Released) => {
+                (Some(" "), winit::event::ElementState::Released) => {
                     self.out = Some(self.buttons[self.selected as usize].get_value())
                 }
                 _ => (),

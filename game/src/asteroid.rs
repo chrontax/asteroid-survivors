@@ -30,7 +30,7 @@ impl Asteroid {
         physics_module.borrow_mut().position = postion;
 
         let mean = 0.0_f32;
-        let std_dev = 100.0_f32; // Adjust for your desired spread
+        let std_dev = 100.0_f32;
         let normal = Normal::new(mean, std_dev).unwrap();
 
         let mut rng = thread_rng();
