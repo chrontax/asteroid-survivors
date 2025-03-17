@@ -1,15 +1,17 @@
 use crate::button::Button;
 use crate::menu::{self, Menu};
 use crate::player::Upgrades;
-use engine::RenderLiteral;
+use engine::{physics::PhysicsModule, Input, RenderLiteral};
 use maplit::hashmap;
 use rand::seq::SliceRandom; // 0.7.2
 use rand::thread_rng;
 use rand::Rng;
 use std::collections::HashMap;
+
 use std::sync::LazyLock;
 use ultraviolet::{Vec2, Vec3, Vec4};
 
+#[derive(Clone)]
 pub struct UpgradeManager<'a> {
     menu: Menu<'a>,
 }
@@ -27,21 +29,21 @@ impl<'a> UpgradeManager<'a> {
                         Vec2 { x: -750., y: 0. },
                         up1.to_string(),
                         upgradesList[up1].color,
-                        vec![700., 700., 700., 700.],
+                        vec![300., 300., 300., 300.],
                         upgradesList[up1].description,
                     ),
                     Button::new(
                         Vec2 { x: 0., y: 0. },
                         up2.to_string(),
                         upgradesList[up2].color,
-                        vec![700., 700., 700., 700.],
+                        vec![300., 300., 300., 300.],
                         upgradesList[up2].description,
                     ),
                     Button::new(
                         Vec2 { x: 750., y: 0. },
                         up3.to_string(),
                         upgradesList[up3].color,
-                        vec![700., 700., 700., 700.],
+                        vec![300., 300., 300., 300.],
                         upgradesList[up3].description,
                     ),
                 ],
@@ -49,16 +51,22 @@ impl<'a> UpgradeManager<'a> {
             ),
         }
     }
-    fn to_render(self) -> Vec<RenderLiteral> {
+    pub fn to_render(self) -> Vec<RenderLiteral> {
         self.menu.to_render()
+    }
+    pub fn input(&mut self, input: Input) {
+        self.menu.input(input);
+    }
+    pub fn get_out(&self) -> Option<&str> {
+        self.menu.get_out()
     }
 }
 
-const upgradesList: &[Upgrade] = &[
+pub static upgradesList: &[Upgrade] = &[
     Upgrade {
         upgrade: [
             (UpgradeType::dmg_add, 5.0),
-            (UpgradeType::thrust_add, 2.0),
+            (UpgradeType::thrust_add, 20.0),
             (UpgradeType::rotation_add, 0.5),
         ],
         description: "Increase damage, thrust, and rotation speed.",
@@ -107,11 +115,12 @@ const upgradesList: &[Upgrade] = &[
 ];
 
 pub struct Upgrade {
-    upgrade: [(UpgradeType, f32); 3],
+    pub upgrade: [(UpgradeType, f32); 3],
     description: &'static str,
     color: Vec4,
 }
 
+#[derive(Clone, Copy)]
 pub enum UpgradeType {
     dmg_add,
     dmg_mult,

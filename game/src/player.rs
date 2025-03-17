@@ -1,4 +1,7 @@
-use crate::bullet::Bullet;
+use crate::{
+    bullet::Bullet,
+    upgradeManager::{upgradesList, UpgradeType},
+};
 use engine::{physics::PhysicsEngine, physics::PhysicsModule, Input, RenderLiteral};
 use rand::Rng;
 use std::{borrow, cell::RefCell, f32::consts::PI, rc::Rc};
@@ -117,6 +120,26 @@ impl Player {
                 Some("d") => self.steering_keys.right = state.is_pressed(),
                 Some(" ") => self.shooting.shootnow = state.is_pressed(),
                 _ => (),
+            }
+        }
+    }
+    pub fn upgrade(&mut self, value: &str) {
+        let upgrade = upgradesList[value.parse::<usize>().unwrap()].upgrade;
+        for i in upgrade {
+            match i {
+                (UpgradeType::dmg_add, a) => self.upgrades.dmg_add += a,
+                (UpgradeType::dmg_mult, a) => self.upgrades.dmg_mult += a,
+                (UpgradeType::thrust_add, a) => self.upgrades.thrust_add += a,
+                (UpgradeType::thrust_mult, a) => self.upgrades.thrust_mult += a,
+                (UpgradeType::rotation_add, a) => self.upgrades.rotation_add += a,
+                (UpgradeType::rotation_mult, a) => self.upgrades.rotation_mult += a,
+                (UpgradeType::bounce, a) => self.upgrades.bounce += a.round() as i32,
+                (UpgradeType::pierce, a) => self.upgrades.pierce += a.round() as i32,
+                (UpgradeType::accurancy, a) => self.upgrades.accurancy += a,
+                (UpgradeType::bullet_per_attack, a) => {
+                    self.upgrades.bullet_per_attack += a.round() as i32
+                }
+                (UpgradeType::speed_limit, a) => self.upgrades.speed_limit += a,
             }
         }
     }

@@ -98,7 +98,19 @@ impl<'a> GameTrait for Game<'a> {
                 };
             }
             GameState::Upgradeing => {
-                todo!("upgardy")
+                let mut shapes = vec![];
+                shapes.append(
+                    &mut <UpgradeManager<'_> as Clone>::clone(
+                        &self.upgrade_manager.as_ref().unwrap(),
+                    )
+                    .to_render(),
+                );
+                return EverythingToDraw {
+                    scale: 1. - (MAX_ZOOM_OUT / (1. + (4. + -0.008 * self.speed).exp())),
+                    camera_pos: self.cam_position,
+                    inverted: false,
+                    shapes,
+                };
             }
         }
     }
@@ -140,8 +152,6 @@ impl<'a> GameTrait for Game<'a> {
 
     fn input(&mut self, input: Input) {
         if let Input::Keyboard { key, state } = input.clone() {
-            dbg!(key.to_text());
-            dbg!(state);
             match (key.to_text(), self.game_state, state) {
                 (Some("\u{1b}"), GameState::Paused, winit::event::ElementState::Released) => {
                     self.game_state = GameState::Running
@@ -193,7 +203,16 @@ impl<'a> GameTrait for Game<'a> {
                 }
                 self.menu.as_mut().unwrap().input(input)
             }
-            (GameState::Upgradeing) => (),
+            (GameState::Upgradeing) => {
+                match self.upgrade_manager.as_ref().unwrap().get_out() {
+                    Some(a) => {
+                        self.player.upgrade(a);
+                        self.game_state = GameState::Running
+                    }
+                    _ => (),
+                }
+                self.upgrade_manager.as_mut().unwrap().input(input)
+            }
         }
     }
 }
