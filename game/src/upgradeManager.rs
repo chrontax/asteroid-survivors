@@ -1,7 +1,7 @@
 use crate::button::Button;
-use crate::menu::{Menu};
+use crate::menu::Menu;
 use engine::{Input, RenderLiteral};
- // 0.7.2
+// 0.7.2
 use rand::Rng;
 
 use ultraviolet::{Vec2, Vec4};
@@ -56,7 +56,6 @@ impl<'a> UpgradeManager<'a> {
         self.menu.get_out()
     }
 }
-
 pub static upgradesList: &[Upgrade] = &[
     Upgrade {
         upgrade: [
@@ -69,43 +68,104 @@ pub static upgradesList: &[Upgrade] = &[
     },
     Upgrade {
         upgrade: [
-            (UpgradeType::dmg_mult, 1.2),
-            (UpgradeType::speed_limit, -0.5),
+            (UpgradeType::dmg_mult, 0.2),
+            (UpgradeType::accurancy, 0.01),
             (UpgradeType::bullet_per_attack, 1.0),
         ],
-        description: "Boost damage, reduce speed limit, and add one bullet per attack.",
-
+        description: "Boost damage, decrease accuracy, and add one bullet per attack.",
         color: Vec4::new(0.0, 1.0, 0.0, 1.0), // Green
     },
     Upgrade {
         upgrade: [
-            (UpgradeType::thrust_mult, 1.5),
+            (UpgradeType::thrust_mult, 0.5),
             (UpgradeType::pierce, 1.0),
             (UpgradeType::accurancy, 0.1),
         ],
-        description: "Increase thrust speed, add piercing effect, and improve accuracy.",
-
+        description: "Multiply thrust speed, add piercing effect, and improve accuracy.",
         color: Vec4::new(0.0, 0.0, 1.0, 1.0), // Blue
     },
     Upgrade {
         upgrade: [
             (UpgradeType::dmg_add, 10.0),
-            (UpgradeType::rotation_mult, 1.3),
+            (UpgradeType::rotation_mult, 0.3),
             (UpgradeType::bounce, 1.0),
         ],
         description:
-            "Significantly increase damage and rotation, and add bounce effect to bullets.",
-
+            "Significantly increase damage and multiply rotation, and add bounce effect to bullets.",
         color: Vec4::new(1.0, 1.0, 0.0, 1.0), // Yellow
     },
     Upgrade {
         upgrade: [
-            (UpgradeType::dmg_mult, 1.5),
+            (UpgradeType::dmg_mult, 0.5),
             (UpgradeType::pierce, 1.0),
             (UpgradeType::thrust_add, 5.0),
         ],
-        description: "Massively increase damage and thrust, with added piercing effect.",
+        description: "Multiply damage and increase thrust, with added piercing effect.",
         color: Vec4::new(1.0, 0.5, 0.0, 1.0), // Orange
+    },
+    Upgrade {
+        upgrade: [
+            (UpgradeType::thrust_add, 5.0),
+            (UpgradeType::dmg_mult, 0.3),
+            (UpgradeType::bounce, 1.0),
+        ],
+        description: "Increase thrust, boost damage, and add bounce effect.",
+        color: Vec4::new(0.5, 0.0, 0.5, 1.0), // Purple
+    },
+    Upgrade {
+        upgrade: [
+            (UpgradeType::rotation_mult, 0.4),
+            (UpgradeType::bullet_per_attack, 2.0),
+            (UpgradeType::accurancy, 0.05),
+        ],
+        description: "Increase rotation speed and fire extra bullets, slightly improving accuracy.",
+        color: Vec4::new(0.0, 1.0, 1.0, 1.0), // Cyan
+    },
+    Upgrade {
+        upgrade: [
+            (UpgradeType::thrust_add, 10.0),
+            (UpgradeType::thrust_mult, 0.2),
+            (UpgradeType::thrust_add, 10.0),
+        ],
+        description: "Boost thrust significantly.",
+        color: Vec4::new(1.0, 0.75, 0.8, 1.0), // Pink
+    },
+    Upgrade {
+        upgrade: [
+            (UpgradeType::dmg_add, 15.0),
+            (UpgradeType::pierce, 2.0),
+            (UpgradeType::accurancy, 0.2),
+        ],
+        description: "Massively increase damage, improve piercing effect, and enhance accuracy.",
+        color: Vec4::new(0.8, 0.3, 0.0, 1.0), // Brown
+    },
+    Upgrade {
+        upgrade: [
+            (UpgradeType::thrust_mult, 0.4),
+            (UpgradeType::rotation_add, 1.0),
+            (UpgradeType::bullet_per_attack, 1.0),
+        ],
+        description: "Multiply thrust, improve rotation, and fire an extra bullet per attack.",
+        color: Vec4::new(0.2, 0.8, 0.2, 1.0), // Light Green
+    },
+    Upgrade {
+        upgrade: [
+            (UpgradeType::dmg_mult, 0.3),
+            (UpgradeType::bounce, 2.0),
+            (UpgradeType::accurancy, 0.15),
+        ],
+        description:
+            "Increase damage multiplier, add double bounce effect, and slightly enhance accuracy.",
+        color: Vec4::new(0.7, 0.7, 0.2, 1.0), // Olive
+    },
+    Upgrade {
+        upgrade: [
+            (UpgradeType::dmg_add, 8.0),
+            (UpgradeType::thrust_mult, 0.3),
+            (UpgradeType::pierce, 1.0),
+        ],
+        description: "Increase base damage, multiply thrust, and add piercing.",
+        color: Vec4::new(0.3, 0.2, 0.8, 1.0), // Indigo
     },
 ];
 
@@ -127,7 +187,6 @@ pub enum UpgradeType {
     pierce,
     accurancy,
     bullet_per_attack,
-    speed_limit,
 }
 
 // dict: HashMap<String, Vec4> = hashmap! {

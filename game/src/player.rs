@@ -46,9 +46,7 @@ impl Player {
                 * Vec2::unit_x()
                 * (self.thrust + self.upgrades.thrust_add)
                 * self.upgrades.thrust_mult;
-            if force.mag() <= 1000. * self.upgrades.speed_limit {
-                physics_module.force = force;
-            }
+            physics_module.force = force;
         }
 
         physics_module.angular_velocity = match self.steering_keys.direction() {
@@ -139,7 +137,6 @@ impl Player {
                 (UpgradeType::bullet_per_attack, a) => {
                     self.upgrades.bullet_per_attack += a.round() as i32
                 }
-                (UpgradeType::speed_limit, a) => self.upgrades.speed_limit += a,
             }
         }
     }
@@ -185,7 +182,6 @@ pub struct Upgrades {
     pierce: i32,
     accurancy: f32,
     bullet_per_attack: i32,
-    speed_limit: f32,
 }
 
 impl Default for Upgrades {
@@ -201,7 +197,6 @@ impl Default for Upgrades {
             pierce: 0,
             accurancy: 0.,
             bullet_per_attack: 1,
-            speed_limit: 1.,
         }
     }
 }
