@@ -34,7 +34,7 @@ struct Game<'a> {
     upgrade_manager: Option<UpgradeManager<'a>>,
 }
 
-impl<'a> GameTrait for Game<'a> {
+impl GameTrait for Game<'_> {
     fn init() -> (EngineInitInfo, Self) {
         let mut physics = PhysicsEngine::default();
         (
@@ -66,83 +66,80 @@ impl<'a> GameTrait for Game<'a> {
                 shapes.append(&mut self.player.polygons());
                 shapes.extend(self.asteroid_vec.iter().flat_map(|a| a.polygon()));
 
-                return EverythingToDraw {
+                EverythingToDraw {
                     scale: 1. - (MAX_ZOOM_OUT / (1. + (4. + -0.008 * self.speed).exp())),
                     camera_pos: self.cam_position,
                     inverted: false,
                     shapes,
-                };
+                }
             }
             GameState::MainMenu => {
                 let mut shapes = vec![];
                 shapes.append(&mut self.menu.as_ref().unwrap().to_render());
-                return EverythingToDraw {
+                EverythingToDraw {
                     scale: 1. - (MAX_ZOOM_OUT / (1. + (4. + -0.008 * self.speed).exp())),
                     camera_pos: self.cam_position,
                     inverted: false,
                     shapes,
-                };
+                }
             }
             GameState::Paused => {
                 let mut shapes = vec![];
                 shapes.append(&mut self.menu.as_ref().unwrap().to_render());
-                return EverythingToDraw {
+                EverythingToDraw {
                     scale: 1. - (MAX_ZOOM_OUT / (1. + (4. + -0.008 * self.speed).exp())),
                     camera_pos: self.cam_position,
                     inverted: false,
                     shapes,
-                };
+                }
             }
             GameState::Upgradeing => {
                 let mut shapes = vec![];
                 shapes.append(
                     &mut <UpgradeManager<'_> as Clone>::clone(
-                        &self.upgrade_manager.as_ref().unwrap(),
+                        self.upgrade_manager.as_ref().unwrap(),
                     )
                     .to_render(),
                 );
-                return EverythingToDraw {
+                EverythingToDraw {
                     scale: 1. - (MAX_ZOOM_OUT / (1. + (4. + -0.008 * self.speed).exp())),
                     camera_pos: self.cam_position,
                     inverted: false,
                     shapes,
-                };
+                }
             }
         }
     }
 
     fn update(&mut self, dt: f32) {
-        match self.game_state {
-            GameState::Running => {
-                let player_physics = self.player.physics_module.borrow();
-                self.cam_position = player_physics.position;
-                self.speed = player_physics.velocity.mag();
-                drop(player_physics);
+        if self.game_state == GameState::Running {
+            let player_physics = self.player.physics_module.borrow();
+            self.cam_position = player_physics.position;
+            self.speed = player_physics.velocity.mag();
+            drop(player_physics);
 
-                self.player.update(dt, &mut self.physics);
+            self.player.update(dt, &mut self.physics);
 
-                self.physics.update(dt);
+            self.physics.update(dt);
 
-                if rand::thread_rng().gen::<f32>() < 1. / 200. {
-                    let x = vec![1500.0f32, -1500.0f32];
-                    self.asteroid_vec.push(Asteroid::new(
-                        self.physics.new_module(),
-                        self.cam_position
-                            + Vec2::new(
-                                *x.choose(&mut rand::thread_rng()).unwrap(),
-                                *x.choose(&mut rand::thread_rng()).unwrap(),
-                            ),
-                    ));
-                }
-                for asteroid in self.asteroid_vec.iter_mut() {
-                    asteroid.update(dt);
-                    if asteroid.to_delete && asteroid.timer > 0. {
-                        // tutaj dodanie materialow do upgrade managera kiedy bedzie
-                    }
-                }
-                self.asteroid_vec.retain(|a| !a.to_delete);
+            if rand::thread_rng().gen::<f32>() < 1. / 200. {
+                let x = [1500.0f32, -1500.0f32];
+                self.asteroid_vec.push(Asteroid::new(
+                    self.physics.new_module(),
+                    self.cam_position
+                        + Vec2::new(
+                            *x.choose(&mut rand::thread_rng()).unwrap(),
+                            *x.choose(&mut rand::thread_rng()).unwrap(),
+                        ),
+                ));
             }
-            _ => (),
+            for asteroid in self.asteroid_vec.iter_mut() {
+                asteroid.update(dt);
+                if asteroid.to_delete && asteroid.timer > 0. {
+                    // tutaj dodanie materialow do upgrade managera kiedy bedzie
+                }
+            }
+            self.asteroid_vec.retain(|a| !a.to_delete);
         }
     }
 
@@ -200,12 +197,9 @@ impl<'a> GameTrait for Game<'a> {
                 self.menu.as_mut().unwrap().input(input)
             }
             GameState::Upgradeing => {
-                match self.upgrade_manager.as_ref().unwrap().get_out() {
-                    Some(a) => {
-                        self.player.upgrade(a);
-                        self.game_state = GameState::Running
-                    }
-                    _ => (),
+                if let Some(a) = self.upgrade_manager.as_ref().unwrap().get_out() {
+                    self.player.upgrade(a);
+                    self.game_state = GameState::Running
                 }
                 self.upgrade_manager.as_mut().unwrap().input(input)
             }

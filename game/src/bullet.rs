@@ -60,6 +60,6 @@ impl Bullet {
             border_thickness: 0.,
             colour: Vec4::new(1., 1., 1., 1.),
         });
-        return vect;
+        vect
     }
 }

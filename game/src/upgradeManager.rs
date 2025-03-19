@@ -2,7 +2,10 @@ use crate::button::Button;
 use crate::menu::Menu;
 use engine::{Input, RenderLiteral};
 // 0.7.2
-use rand::Rng;
+use rand::{
+    distributions::{Distribution, Standard},
+    Rng,
+};
 
 use ultraviolet::{Vec2, Vec4};
 
@@ -10,7 +13,7 @@ use ultraviolet::{Vec2, Vec4};
 pub struct UpgradeManager<'a> {
     menu: Menu<'a>,
 }
-impl<'a> UpgradeManager<'a> {
+impl UpgradeManager<'_> {
     pub fn new() -> Self {
         // todo: zrobic zeby upgrady sie nie powtarzaly
         let up1: usize = rand::thread_rng().gen_range(0..upgradesList.len());
@@ -187,8 +190,37 @@ pub enum UpgradeType {
     pierce,
     accurancy,
     bullet_per_attack,
+    empty,
 }
 
 // dict: HashMap<String, Vec4> = hashmap! {
 //     "white".to_string() => Vec4 { x: 1., y: 1., z: 1., w: 1. },
 // };
+
+#[derive(Debug)]
+pub enum ResourceType {
+    Luna,     // range sight
+    Gaia,     // a bit of everything
+    Mars,     // DAMAGE
+    Mercury,  // speed
+    Venus,    // pierce or bounce or heal
+    Jupiter,  // weight + resource gain
+    Neptune,  // attack speed
+    Uranus,   // rotation
+    Asteroid, // forges of the asteroid belt shield
+}
+
+impl Distribution<ResourceType> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> ResourceType {
+        match rng.gen_range(0..=7) {
+            0 => ResourceType::Luna,
+            1 => ResourceType::Gaia,
+            2 => ResourceType::Mars,
+            3 => ResourceType::Mercury,
+            4 => ResourceType::Venus,
+            5 => ResourceType::Jupiter,
+            6 => ResourceType::Neptune,
+            _ => ResourceType::Uranus,
+        }
+    }
+}

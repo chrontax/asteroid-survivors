@@ -107,7 +107,7 @@ impl Player {
         for i in self.bullets.iter() {
             vect.push(i.polygon())
         }
-        return vect;
+        vect
     }
 
     pub fn input(&mut self, input: Input) {
@@ -137,6 +137,7 @@ impl Player {
                 (UpgradeType::bullet_per_attack, a) => {
                     self.upgrades.bullet_per_attack += a.round() as i32
                 }
+                (UpgradeType::empty, a) => (),
             }
         }
     }

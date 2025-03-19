@@ -15,11 +15,11 @@ pub struct Button<'a> {
 impl<'a> Button<'a> {
     pub fn new(placement: Vec2, value: String, color: Vec4, size: Vec<f32>, text: &'a str) -> Self {
         Button {
-            value: value,
-            placement: placement,
-            color: color,
-            size: size,
-            text: text,
+            value,
+            placement,
+            color,
+            size,
+            text,
         }
     }
 
@@ -43,7 +43,7 @@ impl<'a> Button<'a> {
             &mut TextBox {
                 pos: self.placement - Vec2 { x: 50., y: 50. },
                 font_size: 10.,
-                string: &self.text,
+                string: self.text,
                 space_width: 0.5,
                 ui_anchor: Some(Vec2 { x: 0., y: 0. }),
                 char_set: &DEFAULT_FONT,

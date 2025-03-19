@@ -5,16 +5,19 @@ use rand_distr::{Distribution, Normal};
 use std::{cell::RefCell, f32::consts::PI, rc::Rc};
 use ultraviolet::{Vec2, Vec4};
 
+use crate::upgradeManager::ResourceType;
+
 const MIN_VERTICES: f32 = 5.;
 
 pub struct Asteroid {
     pub physics_module: Rc<RefCell<PhysicsModule>>,
     pub distances: Vec<f32>,
     pub angles: Vec<f32>,
-
     pub timer: f32,
     pub to_delete: bool,
-    pub resorces: String,
+    pub resorces: (ResourceType, i32),
+    pub max_health: f32,
+    pub health: f32,
 }
 impl Asteroid {
     pub fn new(physics_module: Rc<RefCell<PhysicsModule>>, postion: Vec2) -> Self {
@@ -44,14 +47,20 @@ impl Asteroid {
             y: value2,
         };
         drop(physics_module_borowed);
-
+        let mean2 = 50.0_f32;
+        let std_dev2 = 10.0_f32;
+        let normal2 = Normal::new(mean2, std_dev2).unwrap();
+        let heal: f32 = normal2.sample(&mut rng).clamp(10.0_f32, 100.0_f32);
+        dbg!(heal);
         Self {
             physics_module,
             distances,
             angles,
             timer: rand::thread_rng().gen_range(2000f32..10000f32),
             to_delete: false,
-            resorces: "None".to_string(),
+            resorces: (rand::random(), rand::thread_rng().gen_range(1..5)),
+            max_health: heal,
+            health: heal - (9. * (heal / 10.)),
         }
     }
 
@@ -64,17 +73,35 @@ impl Asteroid {
 
     pub fn polygon(&self) -> Vec<RenderLiteral> {
         let physics_module = self.physics_module.borrow();
-        let vect: Vec<RenderLiteral> = vec![RenderLiteral::Game(engine::ShapeLiteral::Polygon {
-            pos: physics_module.position,
-            angles: self
-                .angles
-                .iter()
-                .map(|a| a + physics_module.rotation)
-                .collect(),
-            distances: self.distances.clone(),
-            border_thickness: 0.,
-            colour: Vec4::new(1., 0., 0., 1.),
-        })];
-        return vect;
+        let vect: Vec<RenderLiteral> = vec![
+            RenderLiteral::Game(engine::ShapeLiteral::Polygon {
+                pos: physics_module.position,
+                angles: self
+                    .angles
+                    .iter()
+                    .map(|a| a + physics_module.rotation)
+                    .collect(),
+                distances: self.distances.clone(),
+                border_thickness: 0.,
+                colour: Vec4::new(1., 0., 0., 1.),
+            }),
+            RenderLiteral::Game(engine::ShapeLiteral::Polygon {
+                pos: physics_module.position,
+                angles: self
+                    .angles
+                    .iter()
+                    .map(|a| a + physics_module.rotation)
+                    .collect(),
+                distances: self
+                    .distances
+                    .clone()
+                    .iter()
+                    .map(|f| f * (self.health / self.max_health))
+                    .collect(),
+                border_thickness: 0.,
+                colour: Vec4::new(1., 0., 0., 1.),
+            }),
+        ];
+        vect
     }
 }
