@@ -1,3 +1,4 @@
+use crate::utils::get_color_from_resource_type;
 use engine::{physics::PhysicsModule, RenderLiteral};
 use rand::thread_rng;
 use rand::Rng;
@@ -51,16 +52,15 @@ impl Asteroid {
         let std_dev2 = 10.0_f32;
         let normal2 = Normal::new(mean2, std_dev2).unwrap();
         let heal: f32 = normal2.sample(&mut rng).clamp(10.0_f32, 100.0_f32);
-        dbg!(heal);
         Self {
             physics_module,
             distances,
             angles,
-            timer: rand::thread_rng().gen_range(2000f32..10000f32),
+            timer: rand::thread_rng().gen_range(2f32..100f32),
             to_delete: false,
-            resorces: (rand::random(), rand::thread_rng().gen_range(1..5)),
+            resorces: (rand::random(), rand::thread_rng().gen_range(100..2000)),
             max_health: heal,
-            health: heal - (9. * (heal / 10.)),
+            health: heal - (5. * (heal / 10.)),
         }
     }
 
@@ -83,7 +83,7 @@ impl Asteroid {
                     .collect(),
                 distances: self.distances.clone(),
                 border_thickness: 0.,
-                colour: Vec4::new(1., 0., 0., 1.),
+                colour: get_color_from_resource_type(self.resorces.0.clone()),
             }),
             RenderLiteral::Game(engine::ShapeLiteral::Polygon {
                 pos: physics_module.position,
@@ -99,7 +99,7 @@ impl Asteroid {
                     .map(|f| f * (self.health / self.max_health))
                     .collect(),
                 border_thickness: 0.,
-                colour: Vec4::new(1., 0., 0., 1.),
+                colour: get_color_from_resource_type(self.resorces.0.clone()),
             }),
         ];
         vect

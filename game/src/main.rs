@@ -1,12 +1,16 @@
 use asteroid::Asteroid;
+use engine::text::TextBox;
+use engine::text::DEFAULT_FONT;
 use engine::{
     physics::PhysicsEngine, run_game, EngineInitInfo, EverythingToDraw, Game as GameTrait, Input,
 };
+
 use player::Player;
 use rand::seq::SliceRandom;
 use rand::Rng;
-use ultraviolet::Vec2;
+use ultraviolet::{Vec2, Vec4};
 use upgradeManager::UpgradeManager;
+use utils::{get_orb, get_ui_orb};
 use winit::dpi::PhysicalSize;
 
 mod asteroid;
@@ -16,6 +20,7 @@ mod menu;
 mod player;
 mod upgradeManager;
 use menu::Menu;
+mod utils;
 
 const MAX_ZOOM_OUT: f32 = 0.5;
 
@@ -102,7 +107,53 @@ impl GameTrait for Game<'_> {
                     .to_render(),
                 );
                 EverythingToDraw {
-                    scale: 1. - (MAX_ZOOM_OUT / (1. + (4. + -0.008 * self.speed).exp())),
+                    scale: 1.,
+                    camera_pos: self.cam_position,
+                    inverted: false,
+                    shapes,
+                }
+            }
+            GameState::Frenia => {
+                let mut shapes = vec![];
+                shapes.push(get_ui_orb(
+                    Vec2 { x: -0.5, y: -0.5 },
+                    self.player.health / self.player.max_health,
+                    30.,
+                ));
+                shapes.append(
+                    &mut TextBox {
+                        pos: Vec2 { x: 0., y: 0. },
+                        font_size: 10.,
+                        string: &("current health: ".to_owned()
+                            + &self.player.health.to_string().to_owned()
+                            + "\n lama \n pimidor"),
+                        space_width: 0.5,
+                        ui_anchor: Some(Vec2 { x: 0., y: 0. }),
+                        char_set: &DEFAULT_FONT,
+                        line_gap: 1.,
+                        width: 200.,
+                        colour: Vec4::one(),
+                    }
+                    .laid_out(),
+                );
+                shapes.append(
+                    &mut TextBox {
+                        pos: Vec2 { x: 0., y: 0. },
+                        font_size: 10.,
+                        string: &("current health: ".to_owned()
+                            + &self.player.health.to_string().to_owned()),
+                        space_width: 0.5,
+                        ui_anchor: Some(Vec2 { x: 0., y: 0. }),
+                        char_set: &DEFAULT_FONT,
+                        line_gap: 1.,
+                        width: 80.,
+                        colour: Vec4::one(),
+                    }
+                    .laid_out(),
+                );
+
+                EverythingToDraw {
+                    scale: 1.,
                     camera_pos: self.cam_position,
                     inverted: false,
                     shapes,
@@ -135,8 +186,12 @@ impl GameTrait for Game<'_> {
             }
             for asteroid in self.asteroid_vec.iter_mut() {
                 asteroid.update(dt);
-                if asteroid.to_delete && asteroid.timer > 0. {
-                    // tutaj dodanie materialow do upgrade managera kiedy bedzie
+                if asteroid.to_delete {
+                    //&& asteroid.timer > 0.
+                    self.upgrade_manager
+                        .as_mut()
+                        .unwrap()
+                        .add_resource(asteroid.resorces.0, asteroid.resorces.1)
                 }
             }
             self.asteroid_vec.retain(|a| !a.to_delete);
@@ -154,13 +209,22 @@ impl GameTrait for Game<'_> {
                     self.game_state = GameState::Paused
                 }
                 (Some("u"), GameState::Running, winit::event::ElementState::Released) => {
-                    self.upgrade_manager = Some(UpgradeManager::new());
+                    self.upgrade_manager.as_mut().unwrap().make_menu();
                     self.game_state = GameState::Upgradeing
                 }
 
                 (Some("u"), GameState::Upgradeing, winit::event::ElementState::Released) => {
+                    self.upgrade_manager = Some(UpgradeManager::new());
                     self.game_state = GameState::Running
                 }
+                (Some("f"), GameState::Running, winit::event::ElementState::Released) => {
+                    self.game_state = GameState::Frenia
+                }
+
+                (Some("f"), GameState::Frenia, winit::event::ElementState::Released) => {
+                    self.game_state = GameState::Running
+                }
+
                 _ => (),
             }
         }
@@ -173,6 +237,7 @@ impl GameTrait for Game<'_> {
                     None => (),
                     Some("exit") => panic!(),
                     Some("start") => {
+                        self.upgrade_manager = Some(UpgradeManager::new());
                         self.asteroid_vec = vec![];
                         self.cam_position = Vec2::new(0., 0.);
                         self.player = Player::new(self.physics.new_module());
@@ -203,6 +268,7 @@ impl GameTrait for Game<'_> {
                 }
                 self.upgrade_manager.as_mut().unwrap().input(input)
             }
+            _ => (),
         }
     }
 }
@@ -212,4 +278,5 @@ enum GameState {
     Paused,
     Running,
     Upgradeing,
+    Frenia,
 }

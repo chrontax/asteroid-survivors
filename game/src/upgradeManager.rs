@@ -1,9 +1,12 @@
 use crate::button::Button;
 use crate::menu::Menu;
+use crate::utils::get_color_from_resource_type;
 use engine::{Input, RenderLiteral};
+use std::collections::HashMap;
 // 0.7.2
 use rand::{
     distributions::{Distribution, Standard},
+    seq::SliceRandom,
     Rng,
 };
 
@@ -11,208 +14,367 @@ use ultraviolet::{Vec2, Vec4};
 
 #[derive(Clone)]
 pub struct UpgradeManager<'a> {
-    menu: Menu<'a>,
+    menu: Option<Menu<'a>>,
+    resources: HashMap<ResourceType, i32>,
 }
 impl UpgradeManager<'_> {
     pub fn new() -> Self {
         // todo: zrobic zeby upgrady sie nie powtarzaly
-        let up1: usize = rand::thread_rng().gen_range(0..upgradesList.len());
-        let up2: usize = rand::thread_rng().gen_range(0..upgradesList.len());
-        let up3: usize = rand::thread_rng().gen_range(0..upgradesList.len());
-
+        let resources: HashMap<ResourceType, i32> = vec![
+            (ResourceType::Luna, 0),
+            (ResourceType::Gaia, 0),
+            (ResourceType::Mars, 0),
+            (ResourceType::Mercury, 0),
+            (ResourceType::Venus, 0),
+            (ResourceType::Jupiter, 0),
+            (ResourceType::Neptune, 0),
+            (ResourceType::Uranus, 0),
+            (ResourceType::Asteroid, 0),
+            (ResourceType::General, 0),
+        ]
+        .into_iter()
+        .collect();
         Self {
-            menu: Menu::new(
-                vec![
-                    Button::new(
-                        Vec2 { x: -750., y: 0. },
-                        up1.to_string(),
-                        upgradesList[up1].color,
-                        vec![300., 300., 300., 300.],
-                        upgradesList[up1].description,
-                    ),
-                    Button::new(
-                        Vec2 { x: 0., y: 0. },
-                        up2.to_string(),
-                        upgradesList[up2].color,
-                        vec![300., 300., 300., 300.],
-                        upgradesList[up2].description,
-                    ),
-                    Button::new(
-                        Vec2 { x: 750., y: 0. },
-                        up3.to_string(),
-                        upgradesList[up3].color,
-                        vec![300., 300., 300., 300.],
-                        upgradesList[up3].description,
-                    ),
-                ],
-                Vec2 { x: 0., y: 0. },
-            ),
+            menu: None,
+            resources,
         }
     }
     pub fn to_render(self) -> Vec<RenderLiteral> {
-        self.menu.to_render()
+        self.menu.unwrap().to_render()
     }
     pub fn input(&mut self, input: Input) {
-        self.menu.input(input);
+        self.menu.as_mut().unwrap().input(input);
     }
     pub fn get_out(&self) -> Option<&str> {
-        self.menu.get_out()
+        self.menu.as_ref().and_then(|menu| menu.get_out())
+    }
+
+    pub fn make_menu(&mut self) {
+        let mut possibe_upgrades: Vec<(&Upgrade, usize)> = vec![];
+        let i: usize = 0;
+        for upgrade in &UPGRADES {
+            if upgrade.min_resource <= self.resources[&upgrade.resource_type] {
+                possibe_upgrades.push((upgrade, i));
+            }
+        }
+        let mut rngesus = rand::thread_rng();
+        let mut up1: Option<&(&Upgrade, usize)> = possibe_upgrades.choose(&mut rngesus);
+
+        let mut up2: Option<&(&Upgrade, usize)> = possibe_upgrades.choose(&mut rngesus);
+
+        let up3: Option<&(&Upgrade, usize)> = possibe_upgrades.choose(&mut rngesus);
+
+        self.menu = Some(Menu::new(
+            vec![
+                Button::new(
+                    Vec2 { x: -750., y: 0. },
+                    up1.unwrap().1.to_string(),
+                    get_color_from_resource_type(up1.unwrap().0.resource_type),
+                    vec![300., 300., 300., 300.],
+                    up1.unwrap().0.description,
+                ),
+                Button::new(
+                    Vec2 { x: 0., y: 0. },
+                    up2.unwrap().1.to_string(),
+                    get_color_from_resource_type(up2.unwrap().0.resource_type),
+                    vec![300., 300., 300., 300.],
+                    up2.unwrap().0.description,
+                ),
+                Button::new(
+                    Vec2 { x: 750., y: 0. },
+                    up3.unwrap().1.to_string(),
+                    get_color_from_resource_type(up3.unwrap().0.resource_type),
+                    vec![300., 300., 300., 300.],
+                    up3.unwrap().0.description,
+                ),
+            ],
+            Vec2 { x: 0., y: 0. },
+        ))
+    }
+
+    pub fn add_resource(&mut self, res: ResourceType, amount: i32) {
+        *self.resources.entry(res).or_insert(0) += amount;
+        dbg!(&self.resources);
     }
 }
-pub static upgradesList: &[Upgrade] = &[
+
+pub static UPGRADES: [Upgrade; 23] = [
     Upgrade {
         upgrade: [
-            (UpgradeType::dmg_add, 5.0),
-            (UpgradeType::thrust_add, 20.0),
-            (UpgradeType::rotation_add, 0.5),
+            (UpgradeType::DmgAdd, 1.),
+            (UpgradeType::ThrustAdd, 1.),
+            (UpgradeType::Empty, 0.),
         ],
-        description: "Increase damage, thrust, and rotation speed.",
-        color: Vec4::new(1.0, 0.0, 0.0, 1.0), // Red
+        description: "basic damage and thrust upgrade",
+        resource_type: ResourceType::General,
+        min_resource: 0,
     },
     Upgrade {
         upgrade: [
-            (UpgradeType::dmg_mult, 0.2),
-            (UpgradeType::accurancy, 0.01),
-            (UpgradeType::bullet_per_attack, 1.0),
+            (UpgradeType::DmgMult, 0.01),
+            (UpgradeType::ThrustAdd, 1.),
+            (UpgradeType::Empty, 0.),
         ],
-        description: "Boost damage, decrease accuracy, and add one bullet per attack.",
-        color: Vec4::new(0.0, 1.0, 0.0, 1.0), // Green
+        description: "basic mult damage and thrust upgrade",
+        resource_type: ResourceType::General,
+        min_resource: 0,
     },
     Upgrade {
         upgrade: [
-            (UpgradeType::thrust_mult, 0.5),
-            (UpgradeType::pierce, 1.0),
-            (UpgradeType::accurancy, 0.1),
+            (UpgradeType::RotationAdd, 0.01),
+            (UpgradeType::ThrustAdd, 1.),
+            (UpgradeType::Empty, 0.),
         ],
-        description: "Multiply thrust speed, add piercing effect, and improve accuracy.",
-        color: Vec4::new(0.0, 0.0, 1.0, 1.0), // Blue
+        description: "basic rotation and thrust upgrade",
+        resource_type: ResourceType::General,
+        min_resource: 0,
     },
     Upgrade {
         upgrade: [
-            (UpgradeType::dmg_add, 10.0),
-            (UpgradeType::rotation_mult, 0.3),
-            (UpgradeType::bounce, 1.0),
+            (UpgradeType::DmgAdd, 10.0),
+            (UpgradeType::ThrustAdd, 5.0),
+            (UpgradeType::Empty, 0.0),
         ],
-        description:
-            "Significantly increase damage and multiply rotation, and add bounce effect to bullets.",
-        color: Vec4::new(1.0, 1.0, 0.0, 1.0), // Yellow
+        description: "Increases damage and thrust slightly.",
+        resource_type: ResourceType::Mars,
+        min_resource: 100,
     },
     Upgrade {
         upgrade: [
-            (UpgradeType::dmg_mult, 0.5),
-            (UpgradeType::pierce, 1.0),
-            (UpgradeType::thrust_add, 5.0),
+            (UpgradeType::DmgMult, 1.2),
+            (UpgradeType::Pierce, 1.0),
+            (UpgradeType::Empty, 0.0),
         ],
-        description: "Multiply damage and increase thrust, with added piercing effect.",
-        color: Vec4::new(1.0, 0.5, 0.0, 1.0), // Orange
+        description: "Boosts damage and adds piercing effect.",
+        resource_type: ResourceType::Luna,
+        min_resource: 150,
     },
     Upgrade {
         upgrade: [
-            (UpgradeType::thrust_add, 5.0),
-            (UpgradeType::dmg_mult, 0.3),
-            (UpgradeType::bounce, 1.0),
+            (UpgradeType::ThrustMult, 1.5),
+            (UpgradeType::RotationAdd, 10.0),
+            (UpgradeType::Empty, 0.0),
         ],
-        description: "Increase thrust, boost damage, and add bounce effect.",
-        color: Vec4::new(0.5, 0.0, 0.5, 1.0), // Purple
+        description: "Enhances thrust and improves rotation.",
+        resource_type: ResourceType::Mercury,
+        min_resource: 120,
     },
     Upgrade {
         upgrade: [
-            (UpgradeType::rotation_mult, 0.4),
-            (UpgradeType::bullet_per_attack, 2.0),
-            (UpgradeType::accurancy, 0.05),
+            (UpgradeType::Bounce, 2.0),
+            (UpgradeType::Accurancy, 0.8),
+            (UpgradeType::Empty, 0.0),
         ],
-        description: "Increase rotation speed and fire extra bullets, slightly improving accuracy.",
-        color: Vec4::new(0.0, 1.0, 1.0, 1.0), // Cyan
+        description: "Adds bounce effect and increases accuracy.",
+        resource_type: ResourceType::Luna,
+        min_resource: 200,
     },
     Upgrade {
         upgrade: [
-            (UpgradeType::thrust_add, 10.0),
-            (UpgradeType::thrust_mult, 0.2),
-            (UpgradeType::thrust_add, 10.0),
+            (UpgradeType::BulletPerAttack, 2.0),
+            (UpgradeType::DmgMult, 1.1),
+            (UpgradeType::Accurancy, 1.0),
         ],
-        description: "Boost thrust significantly.",
-        color: Vec4::new(1.0, 0.75, 0.8, 1.0), // Pink
+        description: "Fires additional bullets per attack with a slight damage boost.",
+        resource_type: ResourceType::Mars,
+        min_resource: 180,
     },
     Upgrade {
         upgrade: [
-            (UpgradeType::dmg_add, 15.0),
-            (UpgradeType::pierce, 2.0),
-            (UpgradeType::accurancy, 0.2),
+            (UpgradeType::RotationMult, 1.3),
+            (UpgradeType::ThrustAdd, 3.0),
+            (UpgradeType::Empty, 0.0),
         ],
-        description: "Massively increase damage, improve piercing effect, and enhance accuracy.",
-        color: Vec4::new(0.8, 0.3, 0.0, 1.0), // Brown
+        description: "Improves rotation speed and adds thrust.",
+        resource_type: ResourceType::Uranus,
+        min_resource: 130,
     },
     Upgrade {
         upgrade: [
-            (UpgradeType::thrust_mult, 0.4),
-            (UpgradeType::rotation_add, 1.0),
-            (UpgradeType::bullet_per_attack, 1.0),
+            (UpgradeType::DmgAdd, 10.0),
+            (UpgradeType::Pierce, 1.5),
+            (UpgradeType::Empty, 0.0),
         ],
-        description: "Multiply thrust, improve rotation, and fire an extra bullet per attack.",
-        color: Vec4::new(0.2, 0.8, 0.2, 1.0), // Light Green
+        description: "Significantly increases damage and enhances piercing.",
+        resource_type: ResourceType::Mars,
+        min_resource: 250,
     },
     Upgrade {
         upgrade: [
-            (UpgradeType::dmg_mult, 0.3),
-            (UpgradeType::bounce, 2.0),
-            (UpgradeType::accurancy, 0.15),
+            (UpgradeType::ThrustMult, 1.8),
+            (UpgradeType::BulletPerAttack, 1.0),
+            (UpgradeType::Empty, 0.0),
         ],
-        description:
-            "Increase damage multiplier, add double bounce effect, and slightly enhance accuracy.",
-        color: Vec4::new(0.7, 0.7, 0.2, 1.0), // Olive
+        description: "Greatly enhances thrust and adds an extra bullet per attack.",
+        resource_type: ResourceType::Mercury,
+        min_resource: 220,
     },
     Upgrade {
         upgrade: [
-            (UpgradeType::dmg_add, 8.0),
-            (UpgradeType::thrust_mult, 0.3),
-            (UpgradeType::pierce, 1.0),
+            (UpgradeType::Bounce, 3.0),
+            (UpgradeType::Accurancy, 0.9),
+            (UpgradeType::Empty, 0.0),
         ],
-        description: "Increase base damage, multiply thrust, and add piercing.",
-        color: Vec4::new(0.3, 0.2, 0.8, 1.0), // Indigo
+        description: "Maximizes bounce effect and improves accuracy.",
+        resource_type: ResourceType::Luna,
+        min_resource: 300,
+    },
+    Upgrade {
+        upgrade: [
+            (UpgradeType::DmgMult, 1.5),
+            (UpgradeType::ThrustMult, 1.2),
+            (UpgradeType::Empty, 0.0),
+        ],
+        description: "Boosts both damage and thrust multipliers.",
+        resource_type: ResourceType::Gaia,
+        min_resource: 400,
+    },
+    Upgrade {
+        upgrade: [
+            (UpgradeType::RotationAdd, 15.0),
+            (UpgradeType::ThrustAdd, 5.0),
+            (UpgradeType::Empty, 0.0),
+        ],
+        description: "Improves rotation and thrust significantly.",
+        resource_type: ResourceType::Uranus,
+        min_resource: 350,
+    },
+    Upgrade {
+        upgrade: [
+            (UpgradeType::Pierce, 2.0),
+            (UpgradeType::DmgAdd, 8.0),
+            (UpgradeType::Empty, 0.0),
+        ],
+        description: "Enhances piercing and adds substantial damage.",
+        resource_type: ResourceType::Luna,
+        min_resource: 280,
+    },
+    Upgrade {
+        upgrade: [
+            (UpgradeType::BulletPerAttack, 3.0),
+            (UpgradeType::DmgMult, 1.3),
+            (UpgradeType::Accurancy, 1.0),
+        ],
+        description: "Fires three bullets per attack with a strong damage boost.",
+        resource_type: ResourceType::Mars,
+        min_resource: 500,
+    },
+    Upgrade {
+        upgrade: [
+            (UpgradeType::ThrustAdd, 10.0),
+            (UpgradeType::RotationMult, 1.4),
+            (UpgradeType::Empty, 0.0),
+        ],
+        description: "Massively increases thrust and rotation speed.",
+        resource_type: ResourceType::Mercury,
+        min_resource: 450,
+    },
+    Upgrade {
+        upgrade: [
+            (UpgradeType::Bounce, 4.0),
+            (UpgradeType::Accurancy, 1.0),
+            (UpgradeType::Empty, 0.0),
+        ],
+        description: "Maximizes bounce and accuracy for unparalleled performance.",
+        resource_type: ResourceType::Luna,
+        min_resource: 600,
+    },
+    Upgrade {
+        upgrade: [
+            (UpgradeType::DmgMult, 2.0),
+            (UpgradeType::ThrustMult, 1.5),
+            (UpgradeType::Empty, 0.0),
+        ],
+        description: "Doubles damage and significantly boosts thrust.",
+        resource_type: ResourceType::Gaia,
+        min_resource: 700,
+    },
+    Upgrade {
+        upgrade: [
+            (UpgradeType::RotationAdd, 20.0),
+            (UpgradeType::ThrustAdd, 8.0),
+            (UpgradeType::Empty, 0.0),
+        ],
+        description: "Maximizes rotation and thrust for ultimate control.",
+        resource_type: ResourceType::Uranus,
+        min_resource: 650,
+    },
+    Upgrade {
+        upgrade: [
+            (UpgradeType::Pierce, 3.0),
+            (UpgradeType::DmgAdd, 12.0),
+            (UpgradeType::Empty, 0.0),
+        ],
+        description: "Ultimate piercing and massive damage increase.",
+        resource_type: ResourceType::Luna,
+        min_resource: 800,
+    },
+    Upgrade {
+        upgrade: [
+            (UpgradeType::BulletPerAttack, 4.0),
+            (UpgradeType::DmgMult, 1.6),
+            (UpgradeType::Accurancy, 100.),
+        ],
+        description: "Fires four bullets per attack with a massive damage boost.",
+        resource_type: ResourceType::Mars,
+        min_resource: 900,
+    },
+    Upgrade {
+        upgrade: [
+            (UpgradeType::ThrustAdd, 500.0),
+            (UpgradeType::RotationMult, 5.),
+            (UpgradeType::Empty, 0.0),
+        ],
+        description: "Unmatched thrust and rotation speed for ultimate performance.",
+        resource_type: ResourceType::Mercury,
+        min_resource: 850,
     },
 ];
 
+#[derive(Debug)]
 pub struct Upgrade {
     pub upgrade: [(UpgradeType, f32); 3],
     description: &'static str,
-    color: Vec4,
+    resource_type: ResourceType,
+    min_resource: i32,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum UpgradeType {
-    dmg_add,
-    dmg_mult,
-    thrust_add,
-    thrust_mult,
-    rotation_add,
-    rotation_mult,
-    bounce,
-    pierce,
-    accurancy,
-    bullet_per_attack,
-    empty,
+    DmgAdd,
+    DmgMult,
+    ThrustAdd,
+    ThrustMult,
+    RotationAdd,
+    RotationMult,
+    Bounce,
+    Pierce,
+    Accurancy,
+    BulletPerAttack,
+    Empty,
 }
 
 // dict: HashMap<String, Vec4> = hashmap! {
 //     "white".to_string() => Vec4 { x: 1., y: 1., z: 1., w: 1. },
 // };
 
-#[derive(Debug)]
+#[derive(PartialEq, Eq, Hash, Debug, Clone, Copy)]
 pub enum ResourceType {
-    Luna,     // range sight
+    Luna,     // pierce or bounce
     Gaia,     // a bit of everything
     Mars,     // DAMAGE
     Mercury,  // speed
-    Venus,    // pierce or bounce or heal
+    Venus,    // heal
     Jupiter,  // weight + resource gain
     Neptune,  // attack speed
     Uranus,   // rotation
-    Asteroid, // forges of the asteroid belt shield
+    Asteroid, // forges of the asteroid belt shield shield
+    General,
 }
 
 impl Distribution<ResourceType> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> ResourceType {
-        match rng.gen_range(0..=7) {
+        match rng.gen_range(0..=8) {
             0 => ResourceType::Luna,
             1 => ResourceType::Gaia,
             2 => ResourceType::Mars,
@@ -220,7 +382,8 @@ impl Distribution<ResourceType> for Standard {
             4 => ResourceType::Venus,
             5 => ResourceType::Jupiter,
             6 => ResourceType::Neptune,
-            _ => ResourceType::Uranus,
+            7 => ResourceType::Uranus,
+            _ => ResourceType::Asteroid,
         }
     }
 }

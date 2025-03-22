@@ -1,6 +1,7 @@
 use crate::{
     bullet::Bullet,
-    upgradeManager::{upgradesList, UpgradeType},
+    upgradeManager::{UpgradeType, UPGRADES},
+    utils::get_orb,
 };
 use engine::{physics::PhysicsEngine, physics::PhysicsModule, Input, RenderLiteral};
 use rand::Rng;
@@ -8,13 +9,17 @@ use std::{cell::RefCell, f32::consts::PI, rc::Rc};
 use ultraviolet::{Rotor2, Vec2, Vec4};
 
 pub struct Player {
-    pub thrust: f32,
+    thrust: f32,
     pub physics_module: Rc<RefCell<PhysicsModule>>,
-    pub rotation_rps: f32,
+    rotation_rps: f32,
     steering_keys: SteeringKeys,
     shooting: Shooting,
     bullets: Vec<Bullet>,
     pub upgrades: Upgrades,
+    pub health: f32,
+    pub max_health: f32,
+    pub shield: f32,
+    pub max_shield: f32,
 }
 
 impl Player {
@@ -35,6 +40,10 @@ impl Player {
             },
             bullets: Default::default(),
             upgrades: Upgrades::default(),
+            health: 100.,
+            max_health: 100.,
+            shield: 0.,
+            max_shield: 0.,
         }
     }
 
@@ -107,6 +116,12 @@ impl Player {
         for i in self.bullets.iter() {
             vect.push(i.polygon())
         }
+        vect.push(get_orb(
+            physics_module.position,
+            self.health / self.max_health,
+            9.,
+        ));
+        dbg!(&vect);
         vect
     }
 
@@ -122,22 +137,22 @@ impl Player {
         }
     }
     pub fn upgrade(&mut self, value: &str) {
-        let upgrade = upgradesList[value.parse::<usize>().unwrap()].upgrade;
+        let upgrade = UPGRADES[value.parse::<usize>().unwrap()].upgrade;
         for i in upgrade {
             match i {
-                (UpgradeType::dmg_add, a) => self.upgrades.dmg_add += a,
-                (UpgradeType::dmg_mult, a) => self.upgrades.dmg_mult += a,
-                (UpgradeType::thrust_add, a) => self.upgrades.thrust_add += a,
-                (UpgradeType::thrust_mult, a) => self.upgrades.thrust_mult += a,
-                (UpgradeType::rotation_add, a) => self.upgrades.rotation_add += a,
-                (UpgradeType::rotation_mult, a) => self.upgrades.rotation_mult += a,
-                (UpgradeType::bounce, a) => self.upgrades.bounce += a.round() as i32,
-                (UpgradeType::pierce, a) => self.upgrades.pierce += a.round() as i32,
-                (UpgradeType::accurancy, a) => self.upgrades.accurancy += a,
-                (UpgradeType::bullet_per_attack, a) => {
+                (UpgradeType::DmgAdd, a) => self.upgrades.dmg_add += a,
+                (UpgradeType::DmgMult, a) => self.upgrades.dmg_mult += a,
+                (UpgradeType::ThrustAdd, a) => self.upgrades.thrust_add += a,
+                (UpgradeType::ThrustMult, a) => self.upgrades.thrust_mult += a,
+                (UpgradeType::RotationAdd, a) => self.upgrades.rotation_add += a,
+                (UpgradeType::RotationMult, a) => self.upgrades.rotation_mult += a,
+                (UpgradeType::Bounce, a) => self.upgrades.bounce += a.round() as i32,
+                (UpgradeType::Pierce, a) => self.upgrades.pierce += a.round() as i32,
+                (UpgradeType::Accurancy, a) => self.upgrades.accurancy += a,
+                (UpgradeType::BulletPerAttack, a) => {
                     self.upgrades.bullet_per_attack += a.round() as i32
                 }
-                (UpgradeType::empty, a) => (),
+                (UpgradeType::Empty, _) => (),
             }
         }
     }
