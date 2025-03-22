@@ -126,27 +126,12 @@ impl GameTrait for Game<'_> {
                         font_size: 10.,
                         string: &("current health: ".to_owned()
                             + &self.player.health.to_string().to_owned()
-                            + "\n lama \n pimidor"),
+                            + "\n \n max health"),
                         space_width: 0.5,
                         ui_anchor: Some(Vec2 { x: 0., y: 0. }),
                         char_set: &DEFAULT_FONT,
                         line_gap: 1.,
                         width: 200.,
-                        colour: Vec4::one(),
-                    }
-                    .laid_out(),
-                );
-                shapes.append(
-                    &mut TextBox {
-                        pos: Vec2 { x: 0., y: 0. },
-                        font_size: 10.,
-                        string: &("current health: ".to_owned()
-                            + &self.player.health.to_string().to_owned()),
-                        space_width: 0.5,
-                        ui_anchor: Some(Vec2 { x: 0., y: 0. }),
-                        char_set: &DEFAULT_FONT,
-                        line_gap: 1.,
-                        width: 80.,
                         colour: Vec4::one(),
                     }
                     .laid_out(),
