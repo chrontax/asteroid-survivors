@@ -754,4 +754,14 @@ pub static DEFAULT_FONT: phf::Map<char, Character> = phf_map! {
         ],
         width: 3.5,
     },
+    '%' => Character {
+        glyph: [
+            [true, true, false, false, true],
+            [true, true, false, true, false],
+            [false, false, true, false, false],
+            [false, true, false, true, true],
+            [true, false, false, true, true]
+        ],
+        width: 3.5,
+    },
 };

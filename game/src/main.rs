@@ -124,14 +124,17 @@ impl GameTrait for Game<'_> {
                     &mut TextBox {
                         pos: Vec2 { x: 0., y: 0. },
                         font_size: 10.,
-                        string: &("current health: ".to_owned()
-                            + &self.player.health.to_string().to_owned()
-                            + "\n \n max health"),
+                        string: &("Good day to hunt Captain!  \n    hull integrity at:      "
+                            .to_owned()
+                            + &(self.player.health / self.player.max_health)
+                                .to_string()
+                                .to_owned()
+                            + "%"),
                         space_width: 0.5,
-                        ui_anchor: Some(Vec2 { x: 0., y: 0. }),
+                        ui_anchor: Some(Vec2 { x: -0.3, y: -0.5 }),
                         char_set: &DEFAULT_FONT,
                         line_gap: 1.,
-                        width: 200.,
+                        width: 1000.,
                         colour: Vec4::one(),
                     }
                     .laid_out(),
