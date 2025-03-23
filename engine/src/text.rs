@@ -746,13 +746,13 @@ pub static DEFAULT_FONT: phf::Map<char, Character> = phf_map! {
     },
     ':' => Character {
         glyph: [
-            [false, false, true, false, false],
-            [false, false, true, false, false],
             [false, false, false, false, false],
-            [false, false, true, false, false],
-            [false, false, true, false, false]
+            [false, false, false, false, false],
+            [true, false, false, false, false],
+            [false, false, false, false, false],
+            [true, false, false, false, false]
         ],
-        width: 3.5,
+        width: 1.5,
     },
     '%' => Character {
         glyph: [
@@ -762,6 +762,6 @@ pub static DEFAULT_FONT: phf::Map<char, Character> = phf_map! {
             [false, true, false, true, true],
             [true, false, false, true, true]
         ],
-        width: 3.5,
+        width: 5.5,
     },
 };
