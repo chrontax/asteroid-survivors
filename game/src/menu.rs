@@ -4,7 +4,7 @@ use engine::{Input, RenderLiteral};
 use std::f32::consts::PI;
 use ultraviolet::{Vec2, Vec4};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Menu<'a> {
     pub buttons: Vec<Button<'a>>,
     pub selected: i8,

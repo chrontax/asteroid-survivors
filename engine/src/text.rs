@@ -77,6 +77,7 @@ impl TextBox<'_> {
                 }
             }
             cur_line_width = 0.;
+            cur_line += 1;
         }
 
         render_literals

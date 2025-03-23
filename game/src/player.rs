@@ -78,7 +78,6 @@ impl Player {
         }
 
         self.bullets.retain(|a| !a.to_delete);
-
         if self.shooting.shootnow && self.shooting.coolingdown <= 0. {
             let mut rng = rand::thread_rng();
             for _ in 0..self.upgrades.bullet_per_attack {
@@ -121,7 +120,6 @@ impl Player {
             self.health / self.max_health,
             9.,
         ));
-        dbg!(&vect);
         vect
     }
 
@@ -138,7 +136,9 @@ impl Player {
     }
     pub fn upgrade(&mut self, value: &str) {
         let upgrade = UPGRADES[value.parse::<usize>().unwrap()].upgrade;
+        dbg!(value);
         for i in upgrade {
+            dbg!(upgrade);
             match i {
                 (UpgradeType::DmgAdd, a) => self.upgrades.dmg_add += a,
                 (UpgradeType::DmgMult, a) => self.upgrades.dmg_mult += a,

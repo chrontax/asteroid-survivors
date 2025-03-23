@@ -3,7 +3,7 @@ use engine::text::DEFAULT_FONT;
 use engine::RenderLiteral;
 use std::f32::consts::PI;
 use ultraviolet::{Vec2, Vec4};
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Button<'a> {
     pub placement: Vec2,
     pub color: Vec4,

@@ -45,22 +45,47 @@ impl UpgradeManager<'_> {
     pub fn input(&mut self, input: Input) {
         self.menu.as_mut().unwrap().input(input);
     }
-    pub fn get_out(&self) -> Option<&str> {
-        self.menu.as_ref().and_then(|menu| menu.get_out())
+    pub fn get_out(&mut self) -> Option<&str> {
+        let a = self.menu.as_mut().and_then(|menu| menu.get_out());
+        if a != None {
+            *self
+                .resources
+                .get_mut(&UPGRADES[a.unwrap().parse::<usize>().unwrap()].resource_type)
+                .unwrap() -= UPGRADES[a.unwrap().parse::<usize>().unwrap()].min_resource;
+        }
+
+        // dbg!(self.resources[&UPGRADES[a.unwrap().parse::<usize>().unwrap()].resource_type]);
+
+        a
+    }
+    pub fn count_possible_upgrades(&self) -> i32 {
+        let mut count = 0;
+        let mut i: usize = 1;
+        for upgrade in &UPGRADES[1..] {
+            if upgrade.min_resource <= self.resources[&upgrade.resource_type] {
+                count += 1
+            }
+            i += 1;
+        }
+        count
     }
 
     pub fn make_menu(&mut self) {
         let mut possibe_upgrades: Vec<(&Upgrade, usize)> = vec![];
-        let i: usize = 0;
-        for upgrade in &UPGRADES {
+        let mut i: usize = 1;
+        for upgrade in &UPGRADES[1..] {
             if upgrade.min_resource <= self.resources[&upgrade.resource_type] {
                 possibe_upgrades.push((upgrade, i));
             }
+            i += 1;
+        }
+        if possibe_upgrades.len() == 0 {
+            possibe_upgrades.push((&UPGRADES[0], 0 as usize));
         }
         let mut rngesus = rand::thread_rng();
-        let mut up1: Option<&(&Upgrade, usize)> = possibe_upgrades.choose(&mut rngesus);
+        let up1: Option<&(&Upgrade, usize)> = possibe_upgrades.choose(&mut rngesus);
 
-        let mut up2: Option<&(&Upgrade, usize)> = possibe_upgrades.choose(&mut rngesus);
+        let up2: Option<&(&Upgrade, usize)> = possibe_upgrades.choose(&mut rngesus);
 
         let up3: Option<&(&Upgrade, usize)> = possibe_upgrades.choose(&mut rngesus);
 
@@ -94,41 +119,50 @@ impl UpgradeManager<'_> {
 
     pub fn add_resource(&mut self, res: ResourceType, amount: i32) {
         *self.resources.entry(res).or_insert(0) += amount;
-        dbg!(&self.resources);
     }
 }
 
-pub static UPGRADES: [Upgrade; 23] = [
+pub static UPGRADES: [Upgrade; 21] = [
     Upgrade {
         upgrade: [
-            (UpgradeType::DmgAdd, 1.),
-            (UpgradeType::ThrustAdd, 1.),
+            (UpgradeType::Empty, 1.),
+            (UpgradeType::Empty, 1.),
             (UpgradeType::Empty, 0.),
         ],
-        description: "basic damage and thrust upgrade",
+        description: "no possible upgrades",
         resource_type: ResourceType::General,
         min_resource: 0,
     },
-    Upgrade {
-        upgrade: [
-            (UpgradeType::DmgMult, 0.01),
-            (UpgradeType::ThrustAdd, 1.),
-            (UpgradeType::Empty, 0.),
-        ],
-        description: "basic mult damage and thrust upgrade",
-        resource_type: ResourceType::General,
-        min_resource: 0,
-    },
-    Upgrade {
-        upgrade: [
-            (UpgradeType::RotationAdd, 0.01),
-            (UpgradeType::ThrustAdd, 1.),
-            (UpgradeType::Empty, 0.),
-        ],
-        description: "basic rotation and thrust upgrade",
-        resource_type: ResourceType::General,
-        min_resource: 0,
-    },
+    // Upgrade {
+    //     upgrade: [
+    //         (UpgradeType::DmgAdd, 1.),
+    //         (UpgradeType::ThrustAdd, 1.),
+    //         (UpgradeType::Empty, 0.),
+    //     ],
+    //     description: "basic damage and thrust upgrade",
+    //     resource_type: ResourceType::General,
+    //     min_resource: 0,
+    // },
+    // Upgrade {
+    //     upgrade: [
+    //         (UpgradeType::DmgMult, 0.01),
+    //         (UpgradeType::ThrustAdd, 1.),
+    //         (UpgradeType::Empty, 0.),
+    //     ],
+    //     description: "basic mult damage and thrust upgrade",
+    //     resource_type: ResourceType::General,
+    //     min_resource: 0,
+    // },
+    // Upgrade {
+    //     upgrade: [
+    //         (UpgradeType::RotationAdd, 0.01),
+    //         (UpgradeType::ThrustAdd, 1.),
+    //         (UpgradeType::Empty, 0.),
+    //     ],
+    //     description: "basic rotation and thrust upgrade",
+    //     resource_type: ResourceType::General,
+    //     min_resource: 0,
+    // },
     Upgrade {
         upgrade: [
             (UpgradeType::DmgAdd, 10.0),
@@ -253,7 +287,7 @@ pub static UPGRADES: [Upgrade; 23] = [
         upgrade: [
             (UpgradeType::BulletPerAttack, 3.0),
             (UpgradeType::DmgMult, 1.3),
-            (UpgradeType::Accurancy, 1.0),
+            (UpgradeType::Accurancy, 10.5),
         ],
         description: "Fires three bullets per attack with a strong damage boost.",
         resource_type: ResourceType::Mars,

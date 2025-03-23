@@ -120,21 +120,29 @@ impl GameTrait for Game<'_> {
                     self.player.health / self.player.max_health,
                     30.,
                 ));
+                dbg!(&format!(
+                    "Good day to hunt, Captain!\nhull integrity at:  {}% \nshields at:  {}%\nwe can currently afford {} upgrades",
+                    (self.player.health / self.player.max_health) * 100.,
+                    (self.player.shield / self.player.max_shield) * 100.,
+                    self.upgrade_manager.as_ref().unwrap().count_possible_upgrades()
+                ));
+
                 shapes.append(
                     &mut TextBox {
                         pos: Vec2 { x: 0., y: 0. },
                         font_size: 10.,
-                        string: &("Good day to hunt Captain!  \n    hull integrity at:      "
-                            .to_owned()
-                            + &(self.player.health / self.player.max_health)
-                                .to_string()
-                                .to_owned()
-                            + "%"),
-                        space_width: 0.5,
+                        string: &format!(
+                            "Good day to hunt, Captain!\nhull integrity at:  {}% \nshields at:  {}%\nwe can currently afford {} upgrades",
+                            (self.player.health / self.player.max_health) * 100.,
+                            (self.player.shield / self.player.max_shield) * 100.,
+                            self.upgrade_manager.as_ref().unwrap().count_possible_upgrades()
+                        ),
+
+                        space_width: 2.,
                         ui_anchor: Some(Vec2 { x: -0.3, y: -0.5 }),
                         char_set: &DEFAULT_FONT,
-                        line_gap: 1.,
-                        width: 1000.,
+                        line_gap: 5.,
+                        width: 10000.,
                         colour: Vec4::one(),
                     }
                     .laid_out(),
@@ -202,7 +210,6 @@ impl GameTrait for Game<'_> {
                 }
 
                 (Some("u"), GameState::Upgradeing, winit::event::ElementState::Released) => {
-                    self.upgrade_manager = Some(UpgradeManager::new());
                     self.game_state = GameState::Running
                 }
                 (Some("f"), GameState::Running, winit::event::ElementState::Released) => {
@@ -250,7 +257,7 @@ impl GameTrait for Game<'_> {
                 self.menu.as_mut().unwrap().input(input)
             }
             GameState::Upgradeing => {
-                if let Some(a) = self.upgrade_manager.as_ref().unwrap().get_out() {
+                if let Some(a) = self.upgrade_manager.as_mut().unwrap().get_out() {
                     self.player.upgrade(a);
                     self.game_state = GameState::Running
                 }
