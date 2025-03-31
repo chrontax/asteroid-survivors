@@ -63,7 +63,6 @@ impl<T: Default + Clone> PhysicsEngine<T> {
             module.rotation += module.angular_velocity * dt;
 
             if let Some(collider) = &module.current_collider {
-                // println!("Colliding");
                 let collider = collider.borrow();
                 if !polygons_collide(
                     &module.hitbox,
@@ -94,7 +93,6 @@ impl<T: Default + Clone> PhysicsEngine<T> {
                     )
                 });
             if let Some(collider) = collision {
-                println!("Collision");
                 let mut collider_ref = collider.borrow_mut();
                 let mut inner = module.inner.clone();
                 let res1 = (module.on_collision)(&mut inner, &collider_ref.inner);
@@ -105,6 +103,12 @@ impl<T: Default + Clone> PhysicsEngine<T> {
                 if res1 != res2 {
                     panic!("Inconsistent collision response");
                 }
+                let v1 = module.velocity;
+                let v2 = collider_ref.velocity;
+                let m1 = module.mass;
+                let m2 = collider_ref.mass;
+                module.velocity = (m1 - m2) / (m1 + m2) * v1 + 2. * m2 / (m1 + m2) * v2;
+                collider_ref.velocity = (m2 - m1) / (m1 + m2) * v2 + 2. * m1 / (m1 + m2) * v1;
                 collider_ref.current_collider = Some(module_rc.clone());
                 module.current_collider = Some(collider.clone());
             }
@@ -184,10 +188,6 @@ fn polygons_collide(
                     (point.y - left.1) / (right.1 - left.1),
                 )
                 .mag();
-            println!(
-                "{:.3}\t{:.3}\t{:.3}\t{:.3}\t\t{:.3}\t{:.3}",
-                r1, left.1, right.1, point.y, lerped_distance, point.x
-            );
 
             lerped_distance >= point.x
         })
