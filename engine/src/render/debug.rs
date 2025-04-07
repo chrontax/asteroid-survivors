@@ -9,7 +9,8 @@ pub const DEBUG_ENABLED: bool = false;
 pub const DEBUG_ENABLED: bool = true;
 
 pub const REQUIRED_LAYERS: [&CStr; 1] = [c"VK_LAYER_KHRONOS_validation"];
-pub const RAW_REQUIRED_LAYERS: [*const i8; 1] = car::map!(REQUIRED_LAYERS, |name| name.as_ptr());
+pub const RAW_REQUIRED_LAYERS: [*const u8; 1] =
+    car::map!(REQUIRED_LAYERS, |name| name.as_ptr() as *const u8);
 
 pub fn check_layer_support(entry: &Entry) {
     let props = unsafe { entry.enumerate_instance_layer_properties().unwrap() };

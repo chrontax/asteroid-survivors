@@ -21,8 +21,9 @@ use super::{
 };
 
 const REQUIRED_DEVICE_EXTENSIONS: [&CStr; 1] = [swapchain::NAME];
-const RAW_REQUIRED_DEVICE_EXTENSIONS: [*const i8; 1] =
-    car::map!(REQUIRED_DEVICE_EXTENSIONS, |name| name.as_ptr());
+const RAW_REQUIRED_DEVICE_EXTENSIONS: [*const u8; 1] =
+    car::map!(REQUIRED_DEVICE_EXTENSIONS, |name| name.as_ptr()
+        as *const u8);
 
 pub struct Context {
     _entry: Entry,
