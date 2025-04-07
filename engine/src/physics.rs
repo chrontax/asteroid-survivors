@@ -122,7 +122,10 @@ fn polygon_cartesian_coords(shape: &ShapeLiteral, rotation: f32, position: Vec2)
         angles,
         distances,
         ..
-    } = shape;
+    } = shape
+    else {
+        panic!("non-polgon as collider");
+    };
     pos += position;
     angles
         .iter()
@@ -145,7 +148,10 @@ fn polygons_collide(
         angles: p1_angles,
         distances: p1_distances,
         ..
-    } = p1;
+    } = p1
+    else {
+        panic!("non-polgon as collider");
+    };
     p1_pos += pos1;
     p2_cartesian
         .iter()
