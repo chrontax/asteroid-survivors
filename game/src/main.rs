@@ -10,6 +10,7 @@ use rand::seq::SliceRandom;
 use rand::Rng;
 use ultraviolet::{Vec2, Vec4};
 use upgradeManager::UpgradeManager;
+use utils::HitType;
 use utils::{get_orb, get_ui_orb};
 use winit::dpi::PhysicalSize;
 
@@ -30,7 +31,7 @@ fn main() {
 
 struct Game<'a> {
     cam_position: Vec2,
-    physics: PhysicsEngine,
+    physics: PhysicsEngine<HitType>,
     player: Player,
     asteroid_vec: Vec<Asteroid>,
     speed: f32,
@@ -53,7 +54,7 @@ impl GameTrait for Game<'_> {
             },
             Self {
                 cam_position: Default::default(),
-                player: Player::new(physics.new_module()),
+                player: Player::new(&mut physics),
                 physics,
                 asteroid_vec: Default::default(),
                 speed: Default::default(),
@@ -172,7 +173,7 @@ impl GameTrait for Game<'_> {
             if rand::thread_rng().gen::<f32>() < 1. / 200. {
                 let x = [1500.0f32, -1500.0f32];
                 self.asteroid_vec.push(Asteroid::new(
-                    self.physics.new_module(),
+                    &mut self.physics,
                     self.cam_position
                         + Vec2::new(
                             *x.choose(&mut rand::thread_rng()).unwrap(),
@@ -235,7 +236,7 @@ impl GameTrait for Game<'_> {
                         self.upgrade_manager = Some(UpgradeManager::new());
                         self.asteroid_vec = vec![];
                         self.cam_position = Vec2::new(0., 0.);
-                        self.player = Player::new(self.physics.new_module());
+                        self.player = Player::new(&mut self.physics);
                         self.speed = 0.;
                         self.game_state = GameState::Running;
                     }

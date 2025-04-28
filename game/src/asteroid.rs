@@ -1,4 +1,5 @@
-use crate::utils::get_color_from_resource_type;
+use crate::utils::{get_color_from_resource_type, hit, HitType};
+use engine::physics::PhysicsEngine;
 use engine::{physics::PhysicsModule, RenderLiteral};
 use rand::thread_rng;
 use rand::Rng;
@@ -11,7 +12,7 @@ use crate::upgradeManager::ResourceType;
 const MIN_VERTICES: f32 = 5.;
 
 pub struct Asteroid {
-    pub physics_module: Rc<RefCell<PhysicsModule>>,
+    pub physics_module: Rc<RefCell<PhysicsModule<HitType>>>,
     pub distances: Vec<f32>,
     pub angles: Vec<f32>,
     pub timer: f32,
@@ -21,13 +22,27 @@ pub struct Asteroid {
     pub health: f32,
 }
 impl Asteroid {
-    pub fn new(physics_module: Rc<RefCell<PhysicsModule>>, postion: Vec2) -> Self {
+    pub fn new(physics_engine: &mut PhysicsEngine<HitType>, postion: Vec2) -> Self {
         let mut last = 0.;
         let mut points = Vec::new();
         while last < 2. * PI {
             last += rand::thread_rng().gen_range(0.1..(2. * PI / MIN_VERTICES));
             points.push((rand::thread_rng().gen_range(20.0..100.), last));
         }
+        let physics_module: Rc<RefCell<PhysicsModule<HitType>>> = physics_engine.new_module(
+            engine::ShapeLiteral::Polygon {
+                pos: postion,
+                angles: points.iter().map(|(_, angle)| *angle).collect(),
+                distances: points.iter().map(|(dist, _)| *dist).collect(),
+                border_thickness: 0.,
+                colour: get_color_from_resource_type(ResourceType::Asteroid),
+            },
+            &hit,
+            HitType::Asteroid {
+                dmg: 100.,
+                dmg_taken: 0.,
+            },
+        );
 
         let distances: Vec<f32> = points.iter().map(|(dist, _)| *dist).collect();
         let angles: Vec<f32> = points.iter().map(|(_, angle)| *angle).collect();

@@ -1,5 +1,8 @@
 use crate::upgradeManager::ResourceType;
-use engine::{physics::PhysicsEngine, physics::PhysicsModule, Input, RenderLiteral, ShapeLiteral};
+use engine::{
+    physics::CollisionResponse, physics::PhysicsEngine, physics::PhysicsModule, Input,
+    RenderLiteral, ShapeLiteral,
+};
 use rand::Rng;
 use std::{cell::RefCell, f32::consts::PI, rc::Rc};
 use ultraviolet::{Vec2, Vec4};
@@ -53,4 +56,48 @@ pub fn get_color_from_resource_type(res: ResourceType) -> Vec4 {
         ResourceType::General => Vec4::new(0., 0., 0., 1.0),
     };
     out
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub enum HitType {
+    Player {
+        dmgp: f32,
+        dmg_takenp: f32,
+    },
+    Asteroid {
+        dmg: f32,
+        dmg_taken: f32,
+    },
+    Bullet {
+        dmgb: f32,
+        bounce: i32,
+    },
+    #[default]
+    None,
+}
+
+pub fn hit(one: &mut HitType, two: &HitType) -> CollisionResponse {
+    match (one, two) {
+        (HitType::Player { dmg_takenp, .. }, HitType::Asteroid { .. }) => {
+            *dmg_takenp += 1.;
+            CollisionResponse::Collide
+        }
+        (HitType::Asteroid { dmg_taken, .. }, HitType::Player { dmgp, .. }) => {
+            *dmg_taken += dmgp;
+            CollisionResponse::Collide
+        }
+        (HitType::Bullet { bounce: pierce, .. }, HitType::Asteroid { dmg: _, .. }) => {
+            *pierce -= 1;
+            CollisionResponse::Collide
+        }
+        (HitType::Asteroid { dmg_taken, .. }, HitType::Bullet { bounce: _, dmgb }) => {
+            *dmg_taken += dmgb;
+            CollisionResponse::Collide
+        }
+        (HitType::Bullet { .. }, HitType::Player { .. }) => CollisionResponse::Pass,
+        (HitType::Player { .. }, HitType::Bullet { .. }) => CollisionResponse::Pass,
+        (HitType::Asteroid { .. }, HitType::Asteroid { .. }) => CollisionResponse::Collide,
+        (HitType::Bullet { .. }, HitType::Bullet { .. }) => CollisionResponse::Pass,
+        _ => CollisionResponse::Pass,
+    }
 }

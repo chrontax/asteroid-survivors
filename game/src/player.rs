@@ -1,7 +1,7 @@
 use crate::{
     bullet::Bullet,
     upgradeManager::{UpgradeType, UPGRADES},
-    utils::get_orb,
+    utils::{get_orb, hit, HitType},
 };
 use engine::{physics::PhysicsEngine, physics::PhysicsModule, Input, RenderLiteral};
 use rand::Rng;
@@ -10,7 +10,7 @@ use ultraviolet::{Rotor2, Vec2, Vec4};
 
 pub struct Player {
     thrust: f32,
-    pub physics_module: Rc<RefCell<PhysicsModule>>,
+    pub physics_module: Rc<RefCell<PhysicsModule<HitType>>>,
     rotation_rps: f32,
     steering_keys: SteeringKeys,
     shooting: Shooting,
@@ -23,7 +23,21 @@ pub struct Player {
 }
 
 impl Player {
-    pub fn new(physics_module: Rc<RefCell<PhysicsModule>>) -> Self {
+    pub fn new(physics_module: &mut PhysicsEngine<HitType>) -> Self {
+        let physics_module = physics_module.new_module(
+            engine::ShapeLiteral::Polygon {
+                pos: Vec2::zero(),
+                angles: vec![0., 2. / 3. * PI, 4. / 3. * PI],
+                distances: vec![75., 50., 50.],
+                border_thickness: 0.,
+                colour: Vec4::new(1., 1., 1., 1.),
+            },
+            &hit,
+            HitType::Player {
+                dmgp: 100.,
+                dmg_takenp: 0.,
+            },
+        );
         Self {
             physics_module,
             thrust: 500.,
@@ -47,8 +61,21 @@ impl Player {
         }
     }
 
-    pub fn update(&mut self, dt: f32, physics_engine: &mut PhysicsEngine) {
+    pub fn update(&mut self, dt: f32, physics_engine: &mut PhysicsEngine<HitType>) {
         let mut physics_module = self.physics_module.borrow_mut();
+        if matches!(
+            physics_module.inner,
+            HitType::Asteroid {
+                dmg: 10.,
+                dmg_taken: 0.
+            }
+        ) {
+            if self.shield > 0. {
+                self.shield -= dt;
+            } else {
+                self.health -= dt;
+            }
+        }
 
         if self.steering_keys.forward {
             let force = Rotor2::from_angle(physics_module.rotation)
@@ -82,7 +109,7 @@ impl Player {
             let mut rng = rand::thread_rng();
             for _ in 0..self.upgrades.bullet_per_attack {
                 self.bullets.push(Bullet::new(
-                    physics_engine.new_module(),
+                    physics_engine,
                     physics_module.position,
                     physics_module.rotation
                         + PI * (rng.gen_range(
