@@ -26,12 +26,12 @@ impl Asteroid {
         let mut last = 0.;
         let mut points = Vec::new();
         while last < 2. * PI {
-            last += rand::thread_rng().gen_range(0.1..(2. * PI / MIN_VERTICES));
             points.push((rand::thread_rng().gen_range(20.0..100.), last));
+            last += rand::thread_rng().gen_range(0.1..(2. * PI / MIN_VERTICES));
         }
         let physics_module: Rc<RefCell<PhysicsModule<HitType>>> = physics_engine.new_module(
             engine::ShapeLiteral::Polygon {
-                pos: postion,
+                pos: Vec2::zero(),
                 angles: points.iter().map(|(_, angle)| *angle).collect(),
                 distances: points.iter().map(|(dist, _)| *dist).collect(),
                 border_thickness: 0.,
