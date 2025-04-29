@@ -176,7 +176,10 @@ fn polygons_collide(
                     .zip(p1_angles.iter().copied())
                     .rev()
                     .find(|&(_, a)| a + r1 < point.y)
-                    .unwrap()
+                    .unwrap_or((
+                        p1_distances[p1_distances.len() - 1],
+                        p1_angles[p1_angles.len() - 1] - 2. * PI,
+                    ))
             };
             left.1 += r1;
             let mut right = p1_distances
