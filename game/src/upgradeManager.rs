@@ -15,7 +15,7 @@ use ultraviolet::{Vec2, Vec4};
 #[derive(Clone)]
 pub struct UpgradeManager<'a> {
     menu: Option<Menu<'a>>,
-    resources: HashMap<ResourceType, i32>,
+    pub resources: HashMap<ResourceType, i32>,
 }
 impl UpgradeManager<'_> {
     pub fn new() -> Self {

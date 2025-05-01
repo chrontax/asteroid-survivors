@@ -16,8 +16,9 @@ pub struct Bullet {
     pub angles: Vec<f32>,
     pub timer: f32,
     pub to_delete: bool,
-    pierce: i32,
+    dmg: f32,
     bounce: i32,
+    pierce: i32,
 }
 impl Bullet {
     pub fn new(
@@ -25,14 +26,15 @@ impl Bullet {
         postion: Vec2,
         rotation: f32,
         velocity: Vec2,
-        pierce: i32,
+        dmg: f32,
         bounce: i32,
+        pierce: i32,
     ) -> Self {
         let distances: Vec<f32> = vec![10., 10., 10., 10., 10.];
         let angles: Vec<f32> = vec![0., 2. / 5. * PI, 4. / 5. * PI, 6. / 5. * PI, 8. / 5. * PI];
         let mut physics_module = physics_engine.new_module(
             engine::ShapeLiteral::Polygon {
-                pos: postion,
+                pos: Vec2::zero(),
                 angles: angles.clone(),
                 distances: distances.clone(),
                 border_thickness: 0.,
@@ -40,9 +42,11 @@ impl Bullet {
             },
             hit,
             HitType::Bullet {
-                dmgb: 100.,
-                bounce: bounce,
+                dmgb: dmg,
+                bounce,
+                pierce,
             },
+            1.,
         );
         physics_module.borrow_mut().position =
             postion + Rotor2::from_angle(rotation) * Vec2::new(75., 0.);
@@ -59,8 +63,9 @@ impl Bullet {
             angles,
             timer: 10.,
             to_delete: false,
-            pierce,
+            dmg,
             bounce,
+            pierce,
         }
     }
 
@@ -68,6 +73,18 @@ impl Bullet {
         self.timer -= dt;
         if self.timer < 0. {
             self.to_delete = true
+        }
+        if let HitType::Bullet { bounce, pierce, .. } = &mut self.physics_module.borrow_mut().inner
+        {
+            if *bounce >= 0 {
+                self.bounce = *bounce;
+            }
+            if *pierce >= 0 {
+                self.pierce = *pierce;
+            }
+            if self.bounce <= 0 && self.pierce <= 0 {
+                self.to_delete = true;
+            }
         }
     }
 

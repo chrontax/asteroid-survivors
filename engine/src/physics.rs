@@ -35,11 +35,12 @@ impl<T: Default + Clone> PhysicsEngine<T> {
         hitbox: ShapeLiteral,
         on_collision: impl Fn(&mut T, &T) -> CollisionResponse + 'static,
         inner: T,
+        mass: f32,
     ) -> Rc<RefCell<PhysicsModule<T>>> {
         let module = Rc::new(RefCell::new(PhysicsModule {
             position: Vec2::zero(),
             velocity: Vec2::zero(),
-            mass: 1.,
+            mass,
             force: Vec2::zero(),
             rotation: 0.,
             angular_velocity: 0.,
@@ -103,14 +104,16 @@ impl<T: Default + Clone> PhysicsEngine<T> {
                 if res1 != res2 {
                     panic!("Inconsistent collision response");
                 }
-                let v1 = module.velocity;
-                let v2 = collider_ref.velocity;
-                let m1 = module.mass;
-                let m2 = collider_ref.mass;
-                module.velocity = (m1 - m2) / (m1 + m2) * v1 + 2. * m2 / (m1 + m2) * v2;
-                collider_ref.velocity = (m2 - m1) / (m1 + m2) * v2 + 2. * m1 / (m1 + m2) * v1;
-                collider_ref.current_collider = Some(module_rc.clone());
-                module.current_collider = Some(collider.clone());
+                if matches!(res1, CollisionResponse::Collide) {
+                    let v1 = module.velocity;
+                    let v2 = collider_ref.velocity;
+                    let m1 = module.mass;
+                    let m2 = collider_ref.mass;
+                    module.velocity = (m1 - m2) / (m1 + m2) * v1 + 2. * m2 / (m1 + m2) * v2;
+                    collider_ref.velocity = (m2 - m1) / (m1 + m2) * v2 + 2. * m1 / (m1 + m2) * v1;
+                    collider_ref.current_collider = Some(module_rc.clone());
+                    module.current_collider = Some(collider.clone());
+                }
             }
         }
     }

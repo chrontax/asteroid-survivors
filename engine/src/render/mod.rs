@@ -30,13 +30,13 @@ use utils::{
 
 use crate::text::Glyph;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum RenderLiteral {
     UI { anchor: Vec2, shape: ShapeLiteral },
     Game(ShapeLiteral),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ShapeLiteral {
     Polygon {
         pos: Vec2,

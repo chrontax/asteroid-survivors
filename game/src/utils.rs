@@ -71,6 +71,7 @@ pub enum HitType {
     Bullet {
         dmgb: f32,
         bounce: i32,
+        pierce: i32,
     },
     #[default]
     None,
@@ -79,18 +80,30 @@ pub enum HitType {
 pub fn hit(one: &mut HitType, two: &HitType) -> CollisionResponse {
     match (one, two) {
         (HitType::Player { dmg_takenp, .. }, HitType::Asteroid { .. }) => {
-            *dmg_takenp += 1.;
+            *dmg_takenp += 10.;
             CollisionResponse::Collide
         }
         (HitType::Asteroid { dmg_taken, .. }, HitType::Player { dmgp, .. }) => {
             *dmg_taken += dmgp;
             CollisionResponse::Collide
         }
-        (HitType::Bullet { bounce: pierce, .. }, HitType::Asteroid { dmg: _, .. }) => {
-            *pierce -= 1;
-            CollisionResponse::Collide
+        (HitType::Bullet { bounce, pierce, .. }, HitType::Asteroid { dmg: _, .. }) => {
+            if pierce > &mut 0 {
+                *pierce -= 1;
+                return CollisionResponse::Pass;
+            } else if bounce > &mut 0 {
+                *bounce -= 1;
+                return CollisionResponse::Collide;
+            }
+            dbg!("how?");
+            return CollisionResponse::Collide;
+            unreachable!("jak?");
         }
-        (HitType::Asteroid { dmg_taken, .. }, HitType::Bullet { bounce: _, dmgb }) => {
+        (HitType::Asteroid { dmg_taken, .. }, HitType::Bullet { dmgb, pierce, .. }) => {
+            if pierce > &mut 0 {
+                *dmg_taken += dmgb;
+                return CollisionResponse::Pass;
+            }
             *dmg_taken += dmgb;
             CollisionResponse::Collide
         }

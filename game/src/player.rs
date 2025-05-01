@@ -37,10 +37,11 @@ impl Player {
                 dmgp: 100.,
                 dmg_takenp: 0.,
             },
+            50.,
         );
         Self {
             physics_module,
-            thrust: 500.,
+            thrust: 12500.,
             rotation_rps: 1.,
             steering_keys: SteeringKeys {
                 left: false,
@@ -63,18 +64,13 @@ impl Player {
 
     pub fn update(&mut self, dt: f32, physics_engine: &mut PhysicsEngine<HitType>) {
         let mut physics_module = self.physics_module.borrow_mut();
-        if matches!(
-            physics_module.inner,
-            HitType::Asteroid {
-                dmg: 10.,
-                dmg_taken: 0.
-            }
-        ) {
+        if let HitType::Player { dmg_takenp, .. } = &mut physics_module.inner {
             if self.shield > 0. {
-                self.shield -= dt;
+                self.shield -= *dmg_takenp;
             } else {
-                self.health -= dt;
+                self.health -= *dmg_takenp;
             }
+            *dmg_takenp = 0.;
         }
 
         if self.steering_keys.forward {
@@ -116,8 +112,9 @@ impl Player {
                             1.0 - self.upgrades.accurancy..=1.0 + self.upgrades.accurancy,
                         ) + 1.),
                     physics_module.velocity,
+                    (self.upgrades.dmg_add + 10.) * self.upgrades.dmg_mult,
+                    self.upgrades.bounce + 1,
                     self.upgrades.pierce,
-                    self.upgrades.bounce,
                 ));
             }
 

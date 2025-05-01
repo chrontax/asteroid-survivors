@@ -1,7 +1,8 @@
+use ash::vk::SubmitFlags;
 use phf::phf_map;
 use ultraviolet::{Vec2, Vec4};
 
-use crate::{RenderLiteral, ShapeLiteral};
+use crate::{Game, RenderLiteral, ShapeLiteral};
 
 pub type Glyph = [[bool; 5]; 5];
 
@@ -762,6 +763,36 @@ pub static DEFAULT_FONT: phf::Map<char, Character> = phf_map! {
             [false, false, true, false, false],
             [false, true, false, true, true],
             [true, false, false, true, true]
+        ],
+        width: 5.5,
+    },
+    '-' => Character {
+        glyph: [
+            [false, false, false, false, false],
+            [false, false, false, false, false],
+            [false, true, true, true, false],
+            [false, false, false, false, false],
+            [false, false, false, false, false]
+        ],
+        width: 5.5,
+    },
+    '{' => Character {
+        glyph: [
+            [false, false, true, true, false],
+            [true, false, true, false, false],
+            [false, true, true, false, false],
+            [false, false, true, false, false],
+            [false, false, true, true, false]
+        ],
+        width: 5.5,
+    },
+    '}' => Character {
+        glyph: [
+            [false, true, true, false, false],
+            [false, false, true, false, false],
+            [false, false, true, true, false],
+            [false, false, true, false, false],
+            [false, true, true, false, false]
         ],
         width: 5.5,
     },
