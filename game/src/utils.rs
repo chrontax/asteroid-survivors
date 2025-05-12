@@ -88,16 +88,13 @@ pub fn hit(one: &mut HitType, two: &HitType) -> CollisionResponse {
             CollisionResponse::Collide
         }
         (HitType::Bullet { bounce, pierce, .. }, HitType::Asteroid { dmg: _, .. }) => {
-            if pierce > &mut 0 {
-                *pierce -= 1;
+            if *pierce > 0 {
                 return CollisionResponse::Pass;
-            } else if bounce > &mut 0 {
+            } else if *bounce > 0 {
                 *bounce -= 1;
                 return CollisionResponse::Collide;
             }
-            dbg!("how?");
             return CollisionResponse::Collide;
-            unreachable!("jak?");
         }
         (HitType::Asteroid { dmg_taken, .. }, HitType::Bullet { dmgb, pierce, .. }) => {
             if pierce > &mut 0 {

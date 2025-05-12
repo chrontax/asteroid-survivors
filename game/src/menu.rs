@@ -33,10 +33,10 @@ impl<'a> Menu<'a> {
                 },
                 Button {
                     placement: { Vec2 { x: 0., y: 0. } },
-                    value: { "credits".to_string() },
+                    value: { "high scores".to_string() },
                     color: { Vec4::new(1., 1., 1., 1.) },
                     size: { vec![300., 300., 300., 300.] },
-                    text: "credits",
+                    text: "high scores",
                 },
                 Button {
                     placement: { Vec2 { x: 750., y: 0. } },

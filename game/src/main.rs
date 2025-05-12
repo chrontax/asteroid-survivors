@@ -1,13 +1,16 @@
 use asteroid::Asteroid;
 use engine::text::TextBox;
 use engine::text::DEFAULT_FONT;
+use engine::ShapeLiteral;
 use engine::{
     physics::PhysicsEngine, run_game, EngineInitInfo, EverythingToDraw, Game as GameTrait, Input,
 };
-
 use player::Player;
 use rand::seq::SliceRandom;
 use rand::Rng;
+use reqwest::blocking::Response;
+use std::fmt::format;
+use std::{collections::HashMap, f32::consts::PI};
 use ultraviolet::{Vec2, Vec4};
 use upgradeManager::UpgradeManager;
 use utils::HitType;
@@ -23,7 +26,7 @@ mod upgradeManager;
 use menu::Menu;
 mod utils;
 
-const MAX_ZOOM_OUT: f32 = 0.1;
+const MAX_ZOOM_OUT: f32 = 0.000001;
 
 fn main() {
     run_game::<Game>().unwrap();
@@ -39,6 +42,7 @@ struct Game<'a> {
     menu: Option<Menu<'a>>,
     upgrade_manager: Option<UpgradeManager<'a>>,
     time_elapsed: f64,
+    high_scores: String,
 }
 
 impl GameTrait for Game<'_> {
@@ -63,6 +67,7 @@ impl GameTrait for Game<'_> {
                 menu: Some(Menu::new_main()),
                 upgrade_manager: Option::None,
                 time_elapsed: 0.,
+                high_scores: String::new(),
             },
         )
     }
@@ -118,23 +123,52 @@ impl GameTrait for Game<'_> {
             }
             GameState::Frenia => {
                 let mut shapes = vec![];
-                shapes.push(get_ui_orb(
-                    Vec2 { x: -0.5, y: -0.5 },
-                    self.player.health / self.player.max_health,
-                    30.,
-                ));
 
+                let health_ratio = self.player.health / self.player.max_health;
+                let shield_ratio = self.player.shield / self.player.max_shield;
+                let time = self.time_elapsed;
+                let upgrade_count = self
+                    .upgrade_manager
+                    .as_ref()
+                    .unwrap()
+                    .count_possible_upgrades();
+
+                // Custom status message based on health
+                let health_message = if health_ratio > 0.75 {
+                    "Ship in excellent condition."
+                } else if health_ratio > 0.5 {
+                    "Hull holding up, but take care."
+                } else if health_ratio > 0.25 {
+                    "Warning: Structural integrity compromised."
+                } else {
+                    "Critical alert! Immediate repair required!"
+                };
+
+                // Custom message based on upgrade opportunities
+                let upgrade_message = match upgrade_count {
+                    0 => "No upgrades currently affordable.",
+                    1..=2 => "A couple of upgrades are within reach.",
+                    3..=5 => "Multiple upgrades available — consider improving our ship.",
+                    _ => "Upgrade frenzy! We can afford a full overhaul!",
+                };
+
+                // Draw health orb
+                shapes.push(get_ui_orb(Vec2 { x: -0.5, y: -0.5 }, health_ratio, 30.));
+                shapes.push(get_ui_orb(Vec2 { x: -0.5, y: -0.5 }, shield_ratio, 30.));
+
+                // Draw status textbox
                 shapes.append(
                     &mut TextBox {
                         pos: Vec2 { x: 0., y: 0. },
                         font_size: 10.,
                         string: &format!(
-                            "Good day to hunt, Captain!\nhull integrity at:  {}% \nshields at:  {}%\nwe can currently afford {} upgrades",
-                            (self.player.health / self.player.max_health) * 100.,
-                            (self.player.shield / self.player.max_shield) * 100.,
-                            self.upgrade_manager.as_ref().unwrap().count_possible_upgrades()
+                            "Good day to hunt, Captain!\n{}\n{}\nhull integrity at:  {:.1}% \nshields at:  {:.1}%\nsurvival time: {:.1} s",
+                            health_message,
+                            upgrade_message,
+                            health_ratio * 100.,
+                            shield_ratio * 100.,
+                            time,
                         ),
-
                         space_width: 2.,
                         ui_anchor: Some(Vec2 { x: -0.3, y: -0.5 }),
                         char_set: &DEFAULT_FONT,
@@ -152,6 +186,7 @@ impl GameTrait for Game<'_> {
                     shapes,
                 }
             }
+
             GameState::Loss => {
                 let mut shapes = vec![];
                 shapes.push(get_ui_orb(
@@ -165,7 +200,33 @@ impl GameTrait for Game<'_> {
                         pos: Vec2 { x: 0., y: 0. },
                         font_size: 10.,
                         string:
-                            &format!("You have lost the game \n press space to return to the main menu \n your score is \n {:#?} ", self.upgrade_manager.as_ref().unwrap().resources.values().cloned().collect::<Vec<i32>>().iter().map(|a| a as &i32).sum::<i32>() as f64 * self.time_elapsed ),
+                            &format!("You have lost the game \n press esc to return to the main menu \n your score is \n {:#?} ", self.upgrade_manager.as_ref().unwrap().resources.values().cloned().collect::<Vec<i32>>().iter().map(|a| a as &i32).sum::<i32>() as f64 * self.time_elapsed ),
+                        space_width: 2.,
+                        ui_anchor: Some(Vec2 { x: -0.3, y: -0.5 }),
+                        char_set: &DEFAULT_FONT,
+                        line_gap: 5.,
+                        width: 10000.,
+                        colour: Vec4::one(),
+                    }
+                    .laid_out(),
+                );
+
+                EverythingToDraw {
+                    scale: 1.,
+                    camera_pos: self.cam_position,
+                    inverted: false,
+                    shapes,
+                }
+            }
+            GameState::HighScore => {
+                let mut shapes = vec![];
+                shapes.push(get_ui_orb(Vec2 { x: -0.5, y: -0.5 }, 100., 30.));
+
+                shapes.append(
+                    &mut TextBox {
+                        pos: Vec2 { x: 0., y: 0. },
+                        font_size: 10.,
+                        string: &self.high_scores,
                         space_width: 2.,
                         ui_anchor: Some(Vec2 { x: -0.3, y: -0.5 }),
                         char_set: &DEFAULT_FONT,
@@ -198,7 +259,7 @@ impl GameTrait for Game<'_> {
 
             self.physics.update(dt);
             if rand::thread_rng().gen::<f64>()
-                < 1. / 1000. * ((self.time_elapsed / 1000.).floor() + 1.)
+                < 1. / 100. * ((self.time_elapsed / 1000.).floor() + 1.)
             {
                 let x = [1500.0f32, -1500.0f32];
                 self.asteroid_vec.push(Asteroid::new(
@@ -225,11 +286,15 @@ impl GameTrait for Game<'_> {
                 self.game_state = GameState::Loss;
             }
         }
+        if self.game_state == GameState::HighScore {}
     }
 
     fn input(&mut self, input: Input) {
         if let Input::Keyboard { key, state } = input.clone() {
             match (key.to_text(), self.game_state, state) {
+                (Some("\u{1b}"), GameState::HighScore, winit::event::ElementState::Released) => {
+                    self.game_state = GameState::MainMenu
+                }
                 (Some("\u{1b}"), GameState::Paused, winit::event::ElementState::Released) => {
                     self.game_state = GameState::Running
                 }
@@ -252,8 +317,33 @@ impl GameTrait for Game<'_> {
                 (Some("f"), GameState::Frenia, winit::event::ElementState::Released) => {
                     self.game_state = GameState::Running
                 }
-                (Some(" "), GameState::Loss, winit::event::ElementState::Released) => {
+                (Some("\u{1b}"), GameState::Loss, winit::event::ElementState::Released) => {
+                    let client = reqwest::blocking::Client::new();
+                    let mut params = HashMap::new();
+                    params.insert("usr", whoami::realname());
+                    params.insert(
+                        "score",
+                        format!(
+                            "{}",
+                            self.upgrade_manager
+                                .as_ref()
+                                .unwrap()
+                                .resources
+                                .values()
+                                .cloned()
+                                .sum::<i32>() as f64
+                                * self.time_elapsed
+                        ),
+                    );
+
+                    let res = client
+                        .post("https://alebla.pythonanywhere.com/highadd")
+                        .form(&params)
+                        .send();
+
+                    dbg!(res);
                     self.game_state = GameState::MainMenu;
+                    self.menu = Some(Menu::new_main());
                 }
 
                 _ => (),
@@ -274,6 +364,16 @@ impl GameTrait for Game<'_> {
                         self.player = Player::new(&mut self.physics);
                         self.speed = 0.;
                         self.game_state = GameState::Running;
+                    }
+                    Some("high scores") => {
+                        let body = reqwest::blocking::get("https://alebla.pythonanywhere.com/high")
+                            .unwrap()
+                            .text();
+                        self.high_scores = body.unwrap();
+                        dbg!(&self.high_scores);
+                        self.menu = Some(Menu::new_main());
+
+                        self.game_state = GameState::HighScore;
                     }
                     _ => (),
                 }
@@ -312,4 +412,5 @@ enum GameState {
     Upgradeing,
     Frenia,
     Loss,
+    HighScore,
 }

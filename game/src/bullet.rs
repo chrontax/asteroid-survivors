@@ -80,6 +80,7 @@ impl Bullet {
                 self.bounce = *bounce;
             }
             if *pierce >= 0 {
+                *pierce -= 1;
                 self.pierce = *pierce;
             }
             if self.bounce <= 0 && self.pierce <= 0 {

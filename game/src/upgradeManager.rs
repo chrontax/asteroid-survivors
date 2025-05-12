@@ -3,6 +3,7 @@ use crate::menu::Menu;
 use crate::utils::get_color_from_resource_type;
 use engine::{Input, RenderLiteral};
 use std::collections::HashMap;
+
 // 0.7.2
 use rand::{
     distributions::{Distribution, Standard},
@@ -82,35 +83,54 @@ impl UpgradeManager<'_> {
         if possibe_upgrades.len() == 0 {
             possibe_upgrades.push((&UPGRADES[0], 0 as usize));
         }
+
         let mut rngesus = rand::thread_rng();
-        let up1: Option<&(&Upgrade, usize)> = possibe_upgrades.choose(&mut rngesus);
+        use rand::seq::SliceRandom;
 
-        let up2: Option<&(&Upgrade, usize)> = possibe_upgrades.choose(&mut rngesus);
+        // Get up to 3 unique upgrades (or fewer if not enough exist)
+        let upgrades: Vec<_> = if possibe_upgrades.len() >= 3 {
+            // Choose 3 distinct upgrades randomly
+            possibe_upgrades.choose_multiple(&mut rngesus, 3).collect()
+        } else {
+            // If fewer than 3 exist, just take what's available (or return None)
+            possibe_upgrades
+                .choose_multiple(&mut rngesus, possibe_upgrades.len())
+                .collect()
+        };
 
-        let up3: Option<&(&Upgrade, usize)> = possibe_upgrades.choose(&mut rngesus);
+        let up1 = upgrades.get(0).copied();
+        let up2 = upgrades.get(1).copied();
+        let up3 = upgrades.get(3).copied();
 
+        let default_upgrade = (UPGRADES.get(0).unwrap(), 0 as usize);
+        let (up1, up2, up3) = match upgrades.len() {
+            3 => (upgrades[0], upgrades[1], upgrades[2]),
+            2 => (upgrades[0], upgrades[1], &default_upgrade),
+            1 => (upgrades[0], &default_upgrade, &default_upgrade),
+            _ => (&default_upgrade, &default_upgrade, &default_upgrade),
+        };
         self.menu = Some(Menu::new(
             vec![
                 Button::new(
                     Vec2 { x: -750., y: 0. },
-                    up1.unwrap().1.to_string(),
-                    get_color_from_resource_type(up1.unwrap().0.resource_type),
+                    up1.1.to_string(),
+                    get_color_from_resource_type(up1.0.resource_type),
                     vec![300., 300., 300., 300.],
-                    up1.unwrap().0.description,
+                    up1.0.description,
                 ),
                 Button::new(
                     Vec2 { x: 0., y: 0. },
-                    up2.unwrap().1.to_string(),
-                    get_color_from_resource_type(up2.unwrap().0.resource_type),
+                    up2.1.to_string(),
+                    get_color_from_resource_type(up2.0.resource_type),
                     vec![300., 300., 300., 300.],
-                    up2.unwrap().0.description,
+                    up2.0.description,
                 ),
                 Button::new(
                     Vec2 { x: 750., y: 0. },
-                    up3.unwrap().1.to_string(),
-                    get_color_from_resource_type(up3.unwrap().0.resource_type),
+                    up3.1.to_string(),
+                    get_color_from_resource_type(up3.0.resource_type),
                     vec![300., 300., 300., 300.],
-                    up3.unwrap().0.description,
+                    up3.0.description,
                 ),
             ],
             Vec2 { x: 0., y: 0. },
@@ -365,7 +385,7 @@ pub static UPGRADES: [Upgrade; 21] = [
     },
 ];
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Upgrade {
     pub upgrade: [(UpgradeType, f32); 3],
     description: &'static str,
@@ -373,7 +393,7 @@ pub struct Upgrade {
     min_resource: i32,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum UpgradeType {
     DmgAdd,
     DmgMult,

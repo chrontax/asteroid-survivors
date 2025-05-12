@@ -133,11 +133,11 @@ impl Asteroid {
     //         physics_module,
     //         distances,
     //         angles,
-    //         timer: rand::thread_rng().gen_range(2.0..100.0),
+    //         timer: rand::thread_rng().gen_range(100f32..1000f32),
     //         to_delete: false,
-    //         resorces: (rand::random(), rand::thread_rng().gen_range(100..2000)),
+    //         resorces: (rand::random(), rand::thread_rng().gen_range(10..200)),
     //         max_health: heal,
-    //         health: heal - (5.0 * (heal / 10.0)),
+    //         health: heal,
     //     }
     // }
 

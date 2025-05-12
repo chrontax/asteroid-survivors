@@ -58,11 +58,14 @@ impl Player {
             health: 100.,
             max_health: 100.,
             shield: 0.,
-            max_shield: 0.,
+            max_shield: 10.,
         }
     }
 
     pub fn update(&mut self, dt: f32, physics_engine: &mut PhysicsEngine<HitType>) {
+        if self.shield < self.max_shield {
+            self.shield += dt * 0.01 * self.max_shield;
+        }
         let mut physics_module = self.physics_module.borrow_mut();
         if let HitType::Player { dmg_takenp, .. } = &mut physics_module.inner {
             if self.shield > 0. {
@@ -138,6 +141,21 @@ impl Player {
             })];
         for i in self.bullets.iter() {
             vect.push(i.polygon())
+        }
+        if self.shield > 0. {
+            vect.push(RenderLiteral::Game(engine::ShapeLiteral::Polygon {
+                pos: physics_module.position,
+                angles: [0., 2. / 3. * PI, 4. / 3. * PI]
+                    .iter()
+                    .map(|a| a + physics_module.rotation)
+                    .collect(),
+                distances: vec![75., 50., 50.]
+                    .iter()
+                    .map(|f| f * (self.shield / self.max_shield))
+                    .collect(),
+                border_thickness: 0.,
+                colour: Vec4::new(0., 0., 1., 1.),
+            }));
         }
         vect.push(get_orb(
             physics_module.position,
@@ -234,7 +252,7 @@ impl Default for Upgrades {
             rotation_add: 0.,
             rotation_mult: 1.,
             bounce: 0,
-            pierce: 0,
+            pierce: 1,
             accurancy: 0.,
             bullet_per_attack: 1,
         }
