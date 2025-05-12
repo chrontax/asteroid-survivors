@@ -1,3 +1,5 @@
+use geo::{Contains, Point, Polygon};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use std::{cell::RefCell, f32::consts::PI, rc::Rc};
 use ultraviolet::{Lerp, Rotor2, Vec2};
 
@@ -145,62 +147,38 @@ fn polygons_collide(
     r2: f32,
     pos2: Vec2,
 ) -> bool {
-    let p2_cartesian = polygon_cartesian_coords(p2, r2, pos2);
-    let ShapeLiteral::Polygon {
-        pos: mut p1_pos,
-        angles: p1_angles,
-        distances: p1_distances,
-        ..
-    } = p1
-    else {
-        panic!("non-polgon as collider");
+    let ShapeLiteral::Polygon { distances, .. } = p1 else {
+        panic!("twoja stara")
     };
-    p1_pos += pos1;
-    p2_cartesian
+    let ShapeLiteral::Polygon {
+        distances: distances2,
+        ..
+    } = p2
+    else {
+        panic!("twoja stara")
+    };
+
+    let max = |a, b| if a > b { a } else { b };
+
+    if (pos1 - pos2).mag()
+        > distances.iter().reduce(max).unwrap() + distances2.iter().reduce(max).unwrap()
+    {
+        return false;
+    }
+
+    let p1_cartesian = polygon_cartesian_coords(p1, r1, pos1);
+    let p2_cartesian = polygon_cartesian_coords(p2, r2, pos2)
         .iter()
-        .map(|&point| {
-            let point = point - p1_pos;
-            let angle = point.y.atan2(point.x);
-            Vec2::new(
-                point.mag(),
-                if angle < 0. { angle + 2. * PI } else { angle },
-            )
-        })
-        .any(|point| {
-            let mut left = if p1_angles[0] + r1 > point.y {
-                (
-                    p1_distances[p1_distances.len() - 1],
-                    p1_angles[p1_angles.len() - 1] - 2. * PI,
-                )
-            } else {
-                p1_distances
-                    .iter()
-                    .copied()
-                    .zip(p1_angles.iter().copied())
-                    .rev()
-                    .find(|&(_, a)| a + r1 < point.y)
-                    .unwrap_or((
-                        p1_distances[p1_distances.len() - 1],
-                        p1_angles[p1_angles.len() - 1] - 2. * PI,
-                    ))
-            };
-            left.1 += r1;
-            let mut right = p1_distances
-                .iter()
-                .copied()
-                .zip(p1_angles.iter().copied())
-                // .skip(1)
-                .find(|&(_, angle)| angle + r1 > point.y)
-                .unwrap_or((p1_distances[0], p1_angles[0] + 2. * PI));
-            right.1 += r1;
+        .map(|pos| Point::new(pos.x, pos.y))
+        .collect::<Vec<_>>();
 
-            let lerped_distance = (Rotor2::from_angle(right.1) * Vec2::unit_x() * right.0)
-                .lerp(
-                    Rotor2::from_angle(left.1) * Vec2::unit_x() * left.0,
-                    (point.y - left.1) / (right.1 - left.1),
-                )
-                .mag();
+    let p1_geo_poly = Polygon::new(
+        p1_cartesian
+            .iter()
+            .map(|pos| Point::new(pos.x, pos.y))
+            .collect(),
+        Vec::new(),
+    );
 
-            lerped_distance >= point.x
-        })
+    p2_cartesian.par_iter().any(|p| p1_geo_poly.contains(p))
 }
