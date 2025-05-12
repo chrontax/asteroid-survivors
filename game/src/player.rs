@@ -178,9 +178,7 @@ impl Player {
     }
     pub fn upgrade(&mut self, value: &str) {
         let upgrade = UPGRADES[value.parse::<usize>().unwrap()].upgrade;
-        dbg!(value);
         for i in upgrade {
-            dbg!(upgrade);
             match i {
                 (UpgradeType::DmgAdd, a) => self.upgrades.dmg_add += a,
                 (UpgradeType::DmgMult, a) => self.upgrades.dmg_mult += a,

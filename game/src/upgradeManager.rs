@@ -55,8 +55,6 @@ impl UpgradeManager<'_> {
                 .unwrap() -= UPGRADES[a.unwrap().parse::<usize>().unwrap()].min_resource;
         }
 
-        // dbg!(self.resources[&UPGRADES[a.unwrap().parse::<usize>().unwrap()].resource_type]);
-
         a
     }
     pub fn count_possible_upgrades(&self) -> i32 {

@@ -341,7 +341,6 @@ impl GameTrait for Game<'_> {
                         .form(&params)
                         .send();
 
-                    dbg!(res);
                     self.game_state = GameState::MainMenu;
                     self.menu = Some(Menu::new_main());
                 }
@@ -370,7 +369,6 @@ impl GameTrait for Game<'_> {
                             .unwrap()
                             .text();
                         self.high_scores = body.unwrap();
-                        dbg!(&self.high_scores);
                         self.menu = Some(Menu::new_main());
 
                         self.game_state = GameState::HighScore;
