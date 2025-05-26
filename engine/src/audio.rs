@@ -54,7 +54,7 @@ impl AudioEngine {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AudioPlayer {
     tx: Sender<Vec<u8>>,
     txs: Sender<SpeakerSource>,
