@@ -1,6 +1,7 @@
 mod input;
 mod render;
 
+pub mod audio;
 pub mod physics;
 pub mod text;
 
