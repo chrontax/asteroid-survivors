@@ -1,8 +1,11 @@
+use crate::res::{HPZS, HSZA};
 use crate::upgradeManager::ResourceType;
+use engine::audio::{self, AudioEngine, AudioPlayer};
 use engine::{
     physics::CollisionResponse, physics::PhysicsEngine, physics::PhysicsModule, Input,
     RenderLiteral, ShapeLiteral,
 };
+
 use rand::Rng;
 use std::{cell::RefCell, f32::consts::PI, rc::Rc};
 use ultraviolet::{Vec2, Vec4};
@@ -58,7 +61,7 @@ pub fn get_color_from_resource_type(res: ResourceType) -> Vec4 {
     out
 }
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub enum HitType {
     Player {
         dmgp: f32,
@@ -67,6 +70,7 @@ pub enum HitType {
     Asteroid {
         dmg: f32,
         dmg_taken: f32,
+        audio: AudioPlayer,
     },
     Bullet {
         dmgb: f32,
@@ -83,7 +87,13 @@ pub fn hit(one: &mut HitType, two: &HitType) -> CollisionResponse {
             *dmg_takenp += 10.;
             CollisionResponse::Collide
         }
-        (HitType::Asteroid { dmg_taken, .. }, HitType::Player { dmgp, .. }) => {
+        (
+            HitType::Asteroid {
+                dmg_taken, audio, ..
+            },
+            HitType::Player { dmgp, .. },
+        ) => {
+            audio.play(HSZA.to_vec());
             *dmg_taken += dmgp;
             CollisionResponse::Collide
         }
@@ -96,7 +106,14 @@ pub fn hit(one: &mut HitType, two: &HitType) -> CollisionResponse {
             }
             return CollisionResponse::Collide;
         }
-        (HitType::Asteroid { dmg_taken, .. }, HitType::Bullet { dmgb, pierce, .. }) => {
+        (
+            HitType::Asteroid {
+                dmg_taken, audio, ..
+            },
+            HitType::Bullet { dmgb, pierce, .. },
+        ) => {
+            audio.play(HPZS.to_vec());
+
             if pierce > &mut 0 {
                 *dmg_taken += dmgb;
                 return CollisionResponse::Pass;

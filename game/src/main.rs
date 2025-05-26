@@ -1,10 +1,12 @@
 use asteroid::Asteroid;
+use engine::audio::AudioEngine;
 use engine::text::TextBox;
 use engine::text::DEFAULT_FONT;
 use engine::ShapeLiteral;
 use engine::{
     physics::PhysicsEngine, run_game, EngineInitInfo, EverythingToDraw, Game as GameTrait, Input,
 };
+use espeaker::Speaker;
 use player::Player;
 use rand::seq::SliceRandom;
 use rand::Rng;
@@ -16,7 +18,6 @@ use upgradeManager::UpgradeManager;
 use utils::HitType;
 use utils::{get_orb, get_ui_orb};
 use winit::dpi::PhysicalSize;
-
 mod asteroid;
 mod bullet;
 mod button;
@@ -24,6 +25,7 @@ mod menu;
 mod player;
 mod upgradeManager;
 use menu::Menu;
+mod res;
 mod utils;
 
 const MAX_ZOOM_OUT: f32 = 0.000001;
@@ -43,10 +45,12 @@ struct Game<'a> {
     upgrade_manager: Option<UpgradeManager<'a>>,
     time_elapsed: f64,
     high_scores: String,
+    audio_engine: AudioEngine,
 }
 
 impl GameTrait for Game<'_> {
     fn init() -> (EngineInitInfo, Self) {
+        let audio = AudioEngine::new();
         let mut physics = PhysicsEngine::default();
         (
             EngineInitInfo {
@@ -59,7 +63,7 @@ impl GameTrait for Game<'_> {
             },
             Self {
                 cam_position: Default::default(),
-                player: Player::new(&mut physics),
+                player: Player::new(&mut physics, audio.player()),
                 physics,
                 asteroid_vec: Default::default(),
                 speed: Default::default(),
@@ -68,6 +72,7 @@ impl GameTrait for Game<'_> {
                 upgrade_manager: Option::None,
                 time_elapsed: 0.,
                 high_scores: String::new(),
+                audio_engine: audio,
             },
         )
     }
@@ -248,6 +253,7 @@ impl GameTrait for Game<'_> {
     }
 
     fn update(&mut self, dt: f32) {
+        self.audio_engine.update();
         if self.game_state == GameState::Running {
             self.time_elapsed += dt as f64;
             let player_physics = self.player.physics_module.borrow();
@@ -269,6 +275,7 @@ impl GameTrait for Game<'_> {
                             *x.choose(&mut rand::thread_rng()).unwrap(),
                             *x.choose(&mut rand::thread_rng()).unwrap(),
                         ),
+                    self.audio_engine.player(),
                 ));
             }
             for asteroid in self.asteroid_vec.iter_mut() {
@@ -311,6 +318,47 @@ impl GameTrait for Game<'_> {
                     self.game_state = GameState::Running
                 }
                 (Some("f"), GameState::Running, winit::event::ElementState::Released) => {
+                    let health_ratio = self.player.health / self.player.max_health;
+                    let shield_ratio = self.player.shield / self.player.max_shield;
+                    let time = self.time_elapsed;
+                    let upgrade_count = self
+                        .upgrade_manager
+                        .as_ref()
+                        .unwrap()
+                        .count_possible_upgrades();
+
+                    // Custom status message based on health
+                    let health_message = if health_ratio > 0.75 {
+                        "Ship in excellent condition."
+                    } else if health_ratio > 0.5 {
+                        "Hull holding up, but take care."
+                    } else if health_ratio > 0.25 {
+                        "Warning: Structural integrity compromised."
+                    } else {
+                        "Critical alert! Immediate repair required!"
+                    };
+
+                    // Custom message based on upgrade opportunities
+                    let upgrade_message = match upgrade_count {
+                        0 => "No upgrades currently affordable.",
+                        1..=2 => "A couple of upgrades are within reach.",
+                        3..=5 => "Multiple upgrades available — consider improving our ship.",
+                        _ => "Upgrade frenzy! We can afford a full overhaul!",
+                    };
+
+                    // Draw health orb
+
+                    self.audio_engine
+                        .player()
+                        .play_speaker(Speaker::new().speak(&format!(
+                            "Good day to hunt, Captain!\n{}\n{}\nhull integrity at:  {:.1}% \nshields at:  {:.1}%\nsurvival time: {:.1} s",
+                            health_message,
+                            upgrade_message,
+                            health_ratio * 100.,
+                            shield_ratio * 100.,
+                            time,
+                        ),));
+
                     self.game_state = GameState::Frenia
                 }
 
@@ -360,7 +408,7 @@ impl GameTrait for Game<'_> {
                         self.upgrade_manager = Some(UpgradeManager::new());
                         self.asteroid_vec = vec![];
                         self.cam_position = Vec2::new(0., 0.);
-                        self.player = Player::new(&mut self.physics);
+                        self.player = Player::new(&mut self.physics, self.audio_engine.player());
                         self.speed = 0.;
                         self.game_state = GameState::Running;
                     }

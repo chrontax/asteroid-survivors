@@ -1,9 +1,14 @@
 use crate::{
     bullet::Bullet,
+    res::SHOOT,
     upgradeManager::{UpgradeType, UPGRADES},
     utils::{get_orb, hit, HitType},
 };
-use engine::{physics::PhysicsEngine, physics::PhysicsModule, Input, RenderLiteral};
+use engine::{
+    audio::{self, AudioEngine, AudioPlayer},
+    physics::{PhysicsEngine, PhysicsModule},
+    Input, RenderLiteral,
+};
 use rand::Rng;
 use std::{cell::RefCell, f32::consts::PI, rc::Rc};
 use ultraviolet::{Rotor2, Vec2, Vec4};
@@ -20,10 +25,11 @@ pub struct Player {
     pub max_health: f32,
     pub shield: f32,
     pub max_shield: f32,
+    audio: engine::audio::AudioPlayer,
 }
 
 impl Player {
-    pub fn new(physics_module: &mut PhysicsEngine<HitType>) -> Self {
+    pub fn new(physics_module: &mut PhysicsEngine<HitType>, audio: AudioPlayer) -> Self {
         let physics_module = physics_module.new_module(
             engine::ShapeLiteral::Polygon {
                 pos: Vec2::zero(),
@@ -34,7 +40,7 @@ impl Player {
             },
             &hit,
             HitType::Player {
-                dmgp: 100.,
+                dmgp: 50.,
                 dmg_takenp: 0.,
             },
             50.,
@@ -59,6 +65,7 @@ impl Player {
             max_health: 100.,
             shield: 0.,
             max_shield: 10.,
+            audio,
         }
     }
 
@@ -105,6 +112,7 @@ impl Player {
 
         self.bullets.retain(|a| !a.to_delete);
         if self.shooting.shootnow && self.shooting.coolingdown <= 0. {
+            self.audio.play(SHOOT.to_vec());
             let mut rng = rand::thread_rng();
             for _ in 0..self.upgrades.bullet_per_attack {
                 self.bullets.push(Bullet::new(
